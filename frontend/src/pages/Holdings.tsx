@@ -1,4 +1,8 @@
+import { useToast } from "../components/Toast";
+
 const Holdings = () => {
+  const { notify } = useToast();
+
   return (
     <section className="space-y-6">
       <div className="rounded-2xl border border-white/10 bg-surface p-6">
@@ -8,10 +12,28 @@ const Holdings = () => {
             <p className="text-sm text-white/50">Track quantities, conditions, and tags</p>
           </div>
           <div className="flex gap-2">
-            <button className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/60 hover:border-accent/60 hover:text-accent">
+            <button
+              className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/60 hover:border-accent/60 hover:text-accent"
+              onClick={() =>
+                notify({
+                  title: "CSV import is offline",
+                  description: "Start the API server to enable imports.",
+                })
+              }
+              type="button"
+            >
               Import CSV
             </button>
-            <button className="rounded-full border border-accent/40 px-4 py-2 text-sm text-accent hover:bg-accent/10">
+            <button
+              className="rounded-full border border-accent/40 px-4 py-2 text-sm text-accent hover:bg-accent/10"
+              onClick={() =>
+                notify({
+                  title: "Add holding is unavailable",
+                  description: "Connect to a user account to add new holdings.",
+                })
+              }
+              type="button"
+            >
               Add Holding
             </button>
           </div>
@@ -31,7 +53,16 @@ const Holdings = () => {
               </div>
               <div className="flex gap-2 text-xs">
                 <span className="rounded-full bg-accent/20 px-3 py-1 text-accent">{item.tags}</span>
-                <button className="rounded-full border border-white/10 px-3 py-1 text-white/60 hover:border-accent/60 hover:text-accent">
+                <button
+                  className="rounded-full border border-white/10 px-3 py-1 text-white/60 hover:border-accent/60 hover:text-accent"
+                  onClick={() =>
+                    notify({
+                      title: "Editing is disabled in demo mode",
+                      description: "Sign in as an owner to update this holding.",
+                    })
+                  }
+                  type="button"
+                >
                   Edit
                 </button>
               </div>

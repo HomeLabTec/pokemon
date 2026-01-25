@@ -1,4 +1,8 @@
+import { useToast } from "../components/Toast";
+
 const Dashboard = () => {
+  const { notify } = useToast();
+
   return (
     <section className="space-y-6">
       <div className="grid gap-6 lg:grid-cols-3">
@@ -31,6 +35,13 @@ const Dashboard = () => {
               <button
                 key={range}
                 className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/60 hover:border-accent/60 hover:text-accent"
+                onClick={() =>
+                  notify({
+                    title: "Chart controls are demo-only",
+                    description: `The ${range} range will be available once snapshot data is loaded.`,
+                  })
+                }
+                type="button"
               >
                 {range}
               </button>

@@ -1,3 +1,5 @@
+import { useToast } from "../components/Toast";
+
 const steps = [
   {
     title: "Import catalog",
@@ -18,8 +20,17 @@ const steps = [
 ];
 
 const Admin = () => {
+  const { notify } = useToast();
+
   return (
     <section className="space-y-6">
+      <div className="rounded-2xl border border-accent/30 bg-accent/10 p-5 text-sm text-white/80">
+        <p className="font-semibold text-white">Demo mode active</p>
+        <p className="mt-2 text-white/70">
+          The UI is showing sample data. To create users and enable account switching, run the
+          backend bootstrap scripts and complete the setup tasks below.
+        </p>
+      </div>
       <div className="rounded-2xl border border-white/10 bg-surface p-6">
         <h2 className="text-xl font-semibold">Setup Wizard</h2>
         <p className="text-sm text-white/50">Complete initial bootstrap tasks to go offline-ready.</p>
@@ -28,7 +39,16 @@ const Admin = () => {
             <div key={step.title} className="rounded-2xl border border-white/10 bg-base/60 p-5">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold">Step {idx + 1}: {step.title}</h3>
-                <button className="rounded-full border border-accent/40 px-3 py-1 text-xs text-accent hover:bg-accent/10">
+                <button
+                  className="rounded-full border border-accent/40 px-3 py-1 text-xs text-accent hover:bg-accent/10"
+                  onClick={() =>
+                    notify({
+                      title: "Setup task queued (demo)",
+                      description: "Run the backend scripts to execute this step.",
+                    })
+                  }
+                  type="button"
+                >
                   Run
                 </button>
               </div>
