@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.dependencies import get_current_user
-from app.models import Card, CardImage, LatestPrice, PriceHistory, Set
+from app.models import Card, CardImage, LatestPrice, PriceHistory, PriceSource, Set
 from app.schemas import CardOut, SetOut
 
 router = APIRouter()
@@ -44,11 +44,22 @@ def search_cards(
 def card_detail(card_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     card = db.query(Card).filter(Card.id == card_id).first()
     images = db.query(CardImage).filter(CardImage.card_id == card_id).all()
-    latest = db.query(LatestPrice).filter(LatestPrice.entity_type == "card", LatestPrice.entity_id == card_id).all()
+    latest = db.query(LatestPrice, PriceSource).join(PriceSource, LatestPrice.source_id == PriceSource.id).filter(
+        LatestPrice.entity_type == "card",
+        LatestPrice.entity_id == card_id,
+    ).all()
     history = db.query(PriceHistory).filter(PriceHistory.entity_type == "card", PriceHistory.entity_id == card_id).order_by(PriceHistory.ts.desc()).limit(200).all()
     return {
         "card": CardOut.model_validate(card),
         "images": [{"kind": img.kind, "local_path": img.local_path} for img in images],
-        "latest_prices": [{"market": p.market, "updated_at": p.updated_at} for p in latest],
+        "latest_prices": [
+            {
+                "market": price.market,
+                "updated_at": price.updated_at,
+                "source": source.name,
+                "source_type": source.type,
+            }
+            for price, source in latest
+        ],
         "price_history": [{"ts": h.ts, "market": h.market} for h in history],
     }
