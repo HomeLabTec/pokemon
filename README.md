@@ -38,6 +38,18 @@ docker compose exec backend python -m app.scripts.init_db
 docker compose exec backend python -m app.scripts.import_catalog
 ```
 
+### Catalog source
+
+- By default, the importer reads `/data/catalog.json` inside the backend container.
+- You can also point `CATALOG_PATH` at a **directory** of JSON files (e.g. `cards/en`) and it will load them all.
+- This repo mounts `./catalog` to `/data` in the backend container, so you can place files on the host without copying them into the container.
+
+Example using the PokémonTCG data repo:
+
+```bash
+CATALOG_PATH=/data/cards/en docker compose exec backend python -m app.scripts.import_catalog
+```
+
 ```bash
 docker compose exec backend python -m app.scripts.prefetch_images
 ```
