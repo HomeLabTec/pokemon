@@ -58,6 +58,10 @@ docker compose exec backend python -m app.scripts.prefetch_images
 docker compose exec backend python -m app.scripts.seed_prices
 ```
 
+```bash
+docker compose exec backend python -m app.scripts.create_user --email you@example.com --name "Your Name" --password "your-password"
+```
+
 ### Available modes
 
 - `PREFETCH_MODE=owned|set|all` (default: owned)
@@ -125,3 +129,29 @@ On first admin login, use the Admin page to run:
 4. **Invite Friends**
 
 Progress is tracked in the job runs list.
+
+## Accounts
+
+Create a new account from the CLI:
+
+```bash
+docker compose exec backend python -m app.scripts.create_user --email you@example.com --name "Your Name" --password "your-password"
+```
+
+Admin accounts: add `--admin` or use an email ending with `@admin.local`.
+New password hashes use `pbkdf2_sha256` for compatibility in minimal containers.
+
+Sign in from the UI at:
+
+- `http://localhost:8080/login` (through Nginx)
+- `http://localhost:5173/login` (Vite dev server)
+
+If running the Vite dev server, set `VITE_API_URL` to `http://localhost:8080/api` (or your server IP) so the login page can reach the backend. When serving through Nginx at `:8080`, the frontend uses `/api` relative to the current host by default.
+
+## CORS
+
+The backend reads allowed origins from `ALLOWED_ORIGINS` (comma-separated). Defaults to:
+
+```
+http://localhost:8080,http://localhost:5173
+```

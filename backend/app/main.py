@@ -6,12 +6,16 @@ from app.routers import admin, analytics, auth, cards, friends, graded, holdings
 
 app = FastAPI(title=settings.app_name)
 
+origins = [origin.strip() for origin in settings.allowed_origins.split(",") if origin.strip()]
+if not origins:
+    origins = ["http://localhost:8080", "http://localhost:5173"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.allowed_origins],
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"] ,
-    allow_headers=["*"] ,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])

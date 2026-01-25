@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg2://pokemon:pokemon@db:5432/pokemon"
     redis_url: str = "redis://redis:6379/0"
     media_root: str = "/media"
-    allowed_origins: str = "*"
+    allowed_origins: str = "http://localhost:8080,http://localhost:5173"
 
 
 settings = Settings()
