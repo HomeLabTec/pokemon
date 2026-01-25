@@ -14,12 +14,20 @@ const ToastContext = createContext<ToastContextValue | undefined>(undefined);
 
 const TOAST_DURATION = 3500;
 
+const createToastId = () => {
+  if (typeof globalThis.crypto?.randomUUID === "function") {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return `toast-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+};
+
 export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   const notify = useCallback((message: Omit<ToastMessage, "id">) => {
     const toast: ToastMessage = {
-      id: crypto.randomUUID(),
+      id: createToastId(),
       ...message,
     };
     setToasts((prev) => [...prev, toast]);

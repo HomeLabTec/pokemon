@@ -23,7 +23,19 @@ const TopNav = () => {
           >
             Sync status
           </button>
-          <div className="h-9 w-9 rounded-full bg-accent/20" />
+          <button
+            aria-label="User account menu"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-accent/20 text-xs font-semibold text-accent hover:bg-accent/30"
+            onClick={() =>
+              notify({
+                title: "Account menu unavailable",
+                description: "Create a user in the admin panel to enable account switching.",
+              })
+            }
+            type="button"
+          >
+            UA
+          </button>
         </div>
       </div>
     </header>
