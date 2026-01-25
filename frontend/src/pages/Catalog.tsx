@@ -1,4 +1,8 @@
+import { useToast } from "../components/Toast";
+
 const Catalog = () => {
+  const { notify } = useToast();
+
   return (
     <section className="space-y-6">
       <div className="rounded-2xl border border-white/10 bg-surface p-6">
@@ -12,10 +16,28 @@ const Catalog = () => {
               className="w-56 rounded-full bg-base/60 px-4 py-2 text-sm text-white/70 placeholder:text-white/30"
               placeholder="Search cards"
             />
-            <button className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/60 hover:border-accent/60 hover:text-accent">
+            <button
+              className="rounded-full border border-white/10 px-4 py-2 text-sm text-white/60 hover:border-accent/60 hover:text-accent"
+              onClick={() =>
+                notify({
+                  title: "Filters are disabled in demo mode",
+                  description: "Connect the backend to enable catalog filtering.",
+                })
+              }
+              type="button"
+            >
               Filters
             </button>
-            <button className="rounded-full border border-accent/40 px-4 py-2 text-sm text-accent hover:bg-accent/10">
+            <button
+              className="rounded-full border border-accent/40 px-4 py-2 text-sm text-accent hover:bg-accent/10"
+              onClick={() =>
+                notify({
+                  title: "Saved views require an account",
+                  description: "Create a user in the admin panel to save views.",
+                })
+              }
+              type="button"
+            >
               Save View
             </button>
           </div>
