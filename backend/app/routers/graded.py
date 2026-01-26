@@ -18,6 +18,12 @@ def create_graded(payload: GradedCreate, db: Session = Depends(get_db), current_
     return graded
 
 
+@router.get("")
+def list_graded(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    rows = db.query(GradedItem).filter(GradedItem.user_id == current_user.id).all()
+    return [GradedOut.model_validate(row) for row in rows]
+
+
 @router.patch("/{graded_id}", response_model=GradedOut)
 def update_graded(graded_id: int, payload: GradedCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     graded = db.query(GradedItem).filter(GradedItem.id == graded_id, GradedItem.user_id == current_user.id).first()

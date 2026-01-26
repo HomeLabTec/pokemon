@@ -140,6 +140,7 @@ docker compose exec backend python -m app.scripts.create_user --email you@exampl
 
 Admin accounts: add `--admin` or use an email ending with `@admin.local`.
 New password hashes use `pbkdf2_sha256` for compatibility in minimal containers.
+New password hashes use `pbkdf2_sha256` for compatibility in minimal containers.
 
 Sign in from the UI at:
 
@@ -155,3 +156,15 @@ The backend reads allowed origins from `ALLOWED_ORIGINS` (comma-separated). Defa
 ```
 http://localhost:8080,http://localhost:5173
 ```
+
+## UI Features (Backend-connected)
+
+- **Catalog**: real sets + card search, size slider, local images with online fallback, inline NM price, add-to-holdings modal.
+- **Holdings**: grid view with search + set filter (All sets), size slider, local images with online fallback, inline NM price, edit modal.
+- **Dashboard**: shows holdings total value, priced coverage, holdings vs graded count, top holdings list.
+
+## API Helpers
+
+- `POST /api/cards/prices` (body: `{ "card_ids": [1,2,3], "fetch_remote": true }`) returns market prices from the local DB and falls back to online sources when missing.
+- `GET /api/holdings/my` returns holdings with card/set metadata.
+- `GET /api/graded` returns graded items for the current user.
