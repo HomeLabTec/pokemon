@@ -30,6 +30,9 @@ services:
     volumes:
       - media:/media
       - ./catalog:/data:ro
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     depends_on:
       - db
       - redis
@@ -40,6 +43,9 @@ services:
     depends_on:
       - redis
       - backend
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
 
   frontend:
     image: node:20-alpine

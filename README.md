@@ -79,6 +79,7 @@ docker compose exec backend python -m app.scripts.create_user --email you@exampl
 - `TCGCSV_SET_MAP=/data/tcgcsv_set_map.json` (optional set_code → groupId map)
 - `TCGCSV_NUMBER_OVERRIDES=/data/tcgcsv_number_overrides.json` (optional per-set overrides)
 - `SET_METADATA_PATH=/data/sets/en.json` (optional PokemonTCG set metadata to resolve group names)
+- `POKEMONPRICETRACKER_API_KEY=...` (optional, enables on-demand graded price lookups)
 
 Example:
 
@@ -94,6 +95,8 @@ Pricing is seeded from:
 2. **TCGCSV** fallback (only when TCGdex has no pricing)
 
 The card detail endpoint returns `latest_prices` with a `source` and `source_type` so you can see where pricing came from.
+
+Graded pricing uses **PokemonPriceTracker** (optional, on-demand). If `POKEMONPRICETRACKER_API_KEY` is set, graded prices are fetched only when requested from the UI and stored in `latest_prices` with `entity_type="graded"`.
 
 ## Storage layout
 
@@ -160,7 +163,7 @@ http://localhost:8080,http://localhost:5173
 ## UI Features (Backend-connected)
 
 - **Catalog**: real sets + card search, size slider, local images with online fallback, inline NM price, add-to-holdings modal.
-- **Holdings**: grid view with search + set filter (All sets), size slider, local images with online fallback, inline NM price, edit modal.
+- **Holdings**: grid view with search + set filter (All sets), size slider, local images with online fallback, inline NM + graded price, edit modal, on-demand graded value lookup.
 - **Dashboard**: shows holdings total value, priced coverage, holdings vs graded count, top holdings list.
 
 ## API Helpers
@@ -168,3 +171,6 @@ http://localhost:8080,http://localhost:5173
 - `POST /api/cards/prices` (body: `{ "card_ids": [1,2,3], "fetch_remote": true }`) returns market prices from the local DB and falls back to online sources when missing.
 - `GET /api/holdings/my` returns holdings with card/set metadata.
 - `GET /api/graded` returns graded items for the current user.
+- `POST /api/graded/upsert` creates/updates a graded item for a card (`card_id`, `grader`, `grade`).
+- `POST /api/graded/prices` returns graded prices from the local DB.
+- `POST /api/graded/fetch-price` fetches a graded price from PokemonPriceTracker for a single card and stores it.

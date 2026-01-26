@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 type HoldingMeta = {
   grade?: string;
+  grader?: string;
   finish?: string;
 };
 
@@ -66,6 +67,7 @@ const HoldingModal = ({
 }) => {
   const [quantity, setQuantity] = useState(1);
   const [condition, setCondition] = useState("NM");
+  const [grader, setGrader] = useState("None");
   const [grade, setGrade] = useState("");
   const [finish, setFinish] = useState("normal");
   const [isForTrade, setIsForTrade] = useState(false);
@@ -78,6 +80,7 @@ const HoldingModal = ({
     const meta = initial?.meta ?? {};
     setQuantity(initial?.quantity ?? 1);
     setCondition(initial?.condition ?? "NM");
+    setGrader(meta.grader ?? "None");
     setGrade(meta.grade ?? "");
     setFinish(meta.finish ?? "normal");
     setIsForTrade(initial?.is_for_trade ?? false);
@@ -123,11 +126,26 @@ const HoldingModal = ({
             </select>
           </label>
           <label className="text-sm text-white/70">
-            Grade (optional)
+            Grader
+            <select
+              className="mt-2 w-full rounded-xl border border-white/10 bg-base/60 px-3 py-2 text-sm text-white"
+              onChange={(event) => setGrader(event.target.value)}
+              value={grader}
+            >
+              <option value="None">Not graded</option>
+              <option value="PSA">PSA</option>
+              <option value="BGS">BGS</option>
+              <option value="CGC">CGC</option>
+              <option value="SGC">SGC</option>
+              <option value="TAG">TAG</option>
+            </select>
+          </label>
+          <label className="text-sm text-white/70">
+            Grade
             <input
               className="mt-2 w-full rounded-xl border border-white/10 bg-base/60 px-3 py-2 text-sm text-white"
               onChange={(event) => setGrade(event.target.value)}
-              placeholder="PSA 10, BGS 9.5, etc."
+              placeholder="10, 9.5, 9, etc."
               type="text"
               value={grade}
             />
@@ -198,7 +216,7 @@ const HoldingModal = ({
                 is_wantlist: isWantlist,
                 is_watched: isWatched,
                 notes,
-                meta: { grade, finish },
+                meta: { grade, grader, finish },
               })
             }
             type="button"

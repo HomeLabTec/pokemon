@@ -193,8 +193,11 @@ const Dashboard = () => {
                 No priced holdings yet.
               </li>
             )}
-            {topHoldings.map((row) => (
-              <li key={row.name} className="flex items-center justify-between rounded-xl bg-base/60 px-4 py-3">
+            {topHoldings.map((row, idx) => (
+              <li
+                key={`${row.name}-${idx}`}
+                className="flex items-center justify-between rounded-xl bg-base/60 px-4 py-3"
+              >
                 <span>{row.name}</span>
                 <span className="text-accent">${row.value.toFixed(2)}</span>
               </li>

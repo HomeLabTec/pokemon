@@ -6,6 +6,7 @@ import HoldingModal, {
   parseHoldingNotes,
   HoldingDraft,
 } from "../components/HoldingModal";
+import GradedValueModal, { GradedRequest } from "../components/GradedValueModal";
 
 type HoldingRow = {
   holding_id: number;
@@ -28,6 +29,13 @@ type HoldingRow = {
   };
 };
 
+type GradedRow = {
+  id: number;
+  card_id: number;
+  grader: string;
+  grade: string;
+};
+
 const API_BASE =
   (import.meta as any).env?.VITE_API_URL ?? `${window.location.origin}/api`;
 
@@ -41,10 +49,14 @@ const Holdings = () => {
   const [cardSize, setCardSize] = useState(200);
   const [imageMap, setImageMap] = useState<Record<number, string>>({});
   const [priceMap, setPriceMap] = useState<Record<number, { market: number | null }>>({});
+  const [gradedMap, setGradedMap] = useState<Record<number, GradedRow>>({});
+  const [gradedPrices, setGradedPrices] = useState<Record<number, { market: number | null }>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<HoldingRow | null>(null);
   const [saving, setSaving] = useState(false);
+  const [gradingCard, setGradingCard] = useState<HoldingRow | null>(null);
+  const [gradedCooldowns, setGradedCooldowns] = useState<Record<number, number>>({});
 
   const loadHoldings = async () => {
     if (!token) return;
@@ -65,6 +77,7 @@ const Holdings = () => {
       } else {
         setImageMap({});
       }
+      await loadGraded();
     } catch (err: any) {
       setError(err.message || "Failed to load holdings");
     } finally {
@@ -145,6 +158,61 @@ const Holdings = () => {
     }
   };
 
+  const loadGraded = async () => {
+    if (!token) return;
+    try {
+      const response = await fetch(`${API_BASE}/graded`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) {
+        setGradedMap({});
+        return;
+      }
+      const data = (await response.json()) as GradedRow[];
+      const map: Record<number, GradedRow> = {};
+      data.forEach((row) => {
+        map[row.card_id] = row;
+      });
+      setGradedMap(map);
+      const ids = data.map((row) => row.id);
+      if (ids.length) {
+        await fetchGradedPrices(ids);
+      } else {
+        setGradedPrices({});
+      }
+    } catch {
+      setGradedMap({});
+      setGradedPrices({});
+    }
+  };
+
+  const fetchGradedPrices = async (gradedIds: number[]) => {
+    if (!token) return;
+    try {
+      const next: Record<number, { market: number | null }> = {};
+      const batchSize = 50;
+      for (let i = 0; i < gradedIds.length; i += batchSize) {
+        const batch = gradedIds.slice(i, i + batchSize);
+        const response = await fetch(`${API_BASE}/graded/prices`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ graded_ids: batch, fetch_remote: true }),
+        });
+        if (!response.ok) continue;
+        const payload = (await response.json()) as { prices: { graded_id: number; market: number | null }[] };
+        payload.prices.forEach((price) => {
+          next[price.graded_id] = { market: price.market };
+        });
+      }
+      setGradedPrices(next);
+    } catch {
+      setGradedPrices({});
+    }
+  };
+
   const saveHolding = async (draft: HoldingDraft) => {
     if (!token || !editing) return;
     setSaving(true);
@@ -173,6 +241,7 @@ const Holdings = () => {
         title: "Holding updated",
         description: "Your changes were saved.",
       });
+      await upsertGraded(editing.card.id, draft);
       await loadHoldings();
     } catch (err: any) {
       notify({
@@ -182,6 +251,75 @@ const Holdings = () => {
     } finally {
       setSaving(false);
       setEditing(null);
+    }
+  };
+
+  const upsertGraded = async (cardId: number, draft: HoldingDraft) => {
+    const grader = draft.meta.grader;
+    const grade = draft.meta.grade;
+    if (!grader || grader === "None" || !grade) {
+      return;
+    }
+    try {
+      await fetch(`${API_BASE}/graded/upsert`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ card_id: cardId, grader, grade }),
+      });
+    } catch {
+      // ignore graded upsert failures
+    }
+  };
+
+  const fetchGradedValue = async (cardId: number, request: GradedRequest) => {
+    if (!token) return;
+    const cooldownUntil = gradedCooldowns[cardId];
+    if (cooldownUntil && cooldownUntil > Date.now()) {
+      notify({
+        title: "Please wait",
+        description: "Try again in a minute to avoid API rate limits.",
+      });
+      return;
+    }
+    try {
+      const response = await fetch(`${API_BASE}/graded/fetch-price`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ card_id: cardId, grader: request.grader, grade: request.grade }),
+      });
+      if (!response.ok) {
+        const message = await response.text();
+        throw new Error(message || `Failed to fetch graded value (${response.status})`);
+      }
+      const payload = (await response.json()) as { graded_id: number; market: number | null };
+      setGradedMap((prev) => ({
+        ...prev,
+        [cardId]: {
+          id: payload.graded_id,
+          card_id: cardId,
+          grader: request.grader,
+          grade: request.grade,
+        },
+      }));
+      setGradedPrices((prev) => ({ ...prev, [payload.graded_id]: { market: payload.market } }));
+      notify({
+        title: "Graded value updated",
+        description: "Latest graded price stored.",
+      });
+      setGradedCooldowns((prev) => ({ ...prev, [cardId]: Date.now() + 60_000 }));
+    } catch (err: any) {
+      notify({
+        title: "Graded lookup failed",
+        description: err.message || "Please try again.",
+      });
+      setGradedCooldowns((prev) => ({ ...prev, [cardId]: Date.now() + 60_000 }));
+    } finally {
     }
   };
 
@@ -315,6 +453,8 @@ const Holdings = () => {
             const imageUrl = localImage
               ? `${window.location.origin}${localImage}`
               : `https://images.pokemontcg.io/${item.set.code}/${item.card.number}.png`;
+            const graded = gradedMap[item.card.id];
+            const gradedValue = graded ? gradedPrices[graded.id]?.market : null;
             return (
               <div
                 key={item.holding_id}
@@ -340,6 +480,16 @@ const Holdings = () => {
                     </span>
                     <span className="text-white/40">NM</span>
                   </div>
+                  {graded && (
+                    <div className="mt-2 flex items-center justify-between text-xs">
+                      <span className="text-white/70">
+                        {graded.grader} {graded.grade}
+                      </span>
+                      <span className="text-accent">
+                        {gradedValue ? `$${gradedValue.toFixed(2)}` : "—"}
+                      </span>
+                    </div>
+                  )}
                   <p className="mt-2 text-xs text-white/60">
                     {item.condition} • Qty {item.quantity}
                   </p>
@@ -350,14 +500,21 @@ const Holdings = () => {
                     {item.is_wantlist && (
                       <span className="rounded-full bg-white/10 px-3 py-1 text-white/70">Want</span>
                     )}
-                    {item.is_watched && (
-                      <span className="rounded-full bg-white/10 px-3 py-1 text-white/70">Watch</span>
-                    )}
-                    <button
-                      className="rounded-full border border-white/10 px-3 py-1 text-white/60 hover:border-accent/60 hover:text-accent"
-                      onClick={() => setEditing(item)}
-                      type="button"
-                    >
+                  {item.is_watched && (
+                    <span className="rounded-full bg-white/10 px-3 py-1 text-white/70">Watch</span>
+                  )}
+                  <button
+                    className="rounded-full border border-white/10 px-3 py-1 text-white/60 hover:border-accent/60 hover:text-accent"
+                    onClick={() => setGradingCard(item)}
+                    type="button"
+                  >
+                    Get graded value
+                  </button>
+                  <button
+                    className="rounded-full border border-white/10 px-3 py-1 text-white/60 hover:border-accent/60 hover:text-accent"
+                    onClick={() => setEditing(item)}
+                    type="button"
+                  >
                       Edit
                     </button>
                   </div>
@@ -382,6 +539,21 @@ const Holdings = () => {
           onClose={() => setEditing(null)}
           onSave={saveHolding}
           open={!!editing}
+        />
+      )}
+      {gradingCard && (
+        <GradedValueModal
+          cardName={gradingCard.card.name}
+          initial={{
+            grader: gradedMap[gradingCard.card.id]?.grader,
+            grade: gradedMap[gradingCard.card.id]?.grade,
+          }}
+          onClose={() => setGradingCard(null)}
+          onSubmit={(request) => {
+            fetchGradedValue(gradingCard.card.id, request);
+            setGradingCard(null);
+          }}
+          open={!!gradingCard}
         />
       )}
     </section>

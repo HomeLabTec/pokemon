@@ -221,6 +221,7 @@ const Catalog = () => {
         title: "Added to holdings",
         description: "The card was added to your collection.",
       });
+      await upsertGraded(cardId, draft);
     } catch (err: any) {
       notify({
         title: "Could not add holding",
@@ -228,6 +229,26 @@ const Catalog = () => {
       });
     } finally {
       setAddingMap((prev) => ({ ...prev, [cardId]: false }));
+    }
+  };
+
+  const upsertGraded = async (cardId: number, draft: HoldingDraft) => {
+    const grader = draft.meta.grader;
+    const grade = draft.meta.grade;
+    if (!grader || grader === "None" || !grade) {
+      return;
+    }
+    try {
+      await fetch(`${API_BASE}/graded/upsert`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ card_id: cardId, grader, grade }),
+      });
+    } catch {
+      // ignore graded upsert failures on add
     }
   };
 
