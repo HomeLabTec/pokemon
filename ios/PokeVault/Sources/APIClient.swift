@@ -18,7 +18,8 @@ final class APIClient: ObservableObject {
     }
 
     func request<T: Decodable>(_ path: String, method: String = "GET", body: Data? = nil) async throws -> T {
-        let url = URL(string: path, relativeTo: AppConfig.apiBaseURL) ?? AppConfig.apiBaseURL.appendingPathComponent(path)
+        let trimmed = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        let url = AppConfig.apiBaseURL.appendingPathComponent(trimmed)
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -35,7 +36,8 @@ final class APIClient: ObservableObject {
     }
 
     func requestVoid(_ path: String, method: String = "POST", body: Data? = nil) async throws {
-        let url = URL(string: path, relativeTo: AppConfig.apiBaseURL) ?? AppConfig.apiBaseURL.appendingPathComponent(path)
+        let trimmed = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        let url = AppConfig.apiBaseURL.appendingPathComponent(trimmed)
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
