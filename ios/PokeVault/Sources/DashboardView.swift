@@ -91,6 +91,11 @@ struct DashboardView: View {
                         y: .value("Total", point.total)
                     )
                     .foregroundStyle(.orange.opacity(0.2))
+                    PointMark(
+                        x: .value("Date", point.date),
+                        y: .value("Total", point.total)
+                    )
+                    .foregroundStyle(.orange)
                 }
                 .frame(height: 200)
                 .chartXAxis {

@@ -10,17 +10,25 @@ struct PriceHistoryChartView: View {
     }
 
     var body: some View {
+        let calendar = Calendar(identifier: .gregorian)
         let chartPoints = sorted.compactMap { point -> (Date, Double)? in
             guard let date = point.date, let value = point.market else { return nil }
-            return (date, value)
+            let day = calendar.startOfDay(for: date)
+            return (day, value)
         }
-        if chartPoints.isEmpty {
+        let deduped = Dictionary(grouping: chartPoints, by: { $0.0 })
+            .map { key, values in
+                let last = values.last ?? (key, 0)
+                return (key, last.1)
+            }
+            .sorted { $0.0 < $1.0 }
+        if deduped.isEmpty {
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color.white.opacity(0.06))
                 .overlay(Text("No price history yet").foregroundColor(.white.opacity(0.6)))
                 .frame(height: 180)
         } else {
-            Chart(chartPoints, id: \.0) { point in
+            Chart(deduped, id: \.0) { point in
                 LineMark(
                     x: .value("Date", point.0),
                     y: .value("Price", point.1)
@@ -31,6 +39,11 @@ struct PriceHistoryChartView: View {
                     y: .value("Price", point.1)
                 )
                 .foregroundStyle(.orange.opacity(0.2))
+                PointMark(
+                    x: .value("Date", point.0),
+                    y: .value("Price", point.1)
+                )
+                .foregroundStyle(.orange)
             }
             .frame(height: 180)
             .chartYAxis {

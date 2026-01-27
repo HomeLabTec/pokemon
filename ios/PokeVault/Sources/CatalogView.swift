@@ -178,7 +178,6 @@ struct CatalogView: View {
             let detail: CardDetailResponse = try await APIClient.shared.request("cards/\(card.id)")
             self.detail = detail
             self.selectedCard = card
-            print("[iOS] catalog price_history sample:", detail.price_history.prefix(5))
             showDetail = true
         } catch {
             // ignore
