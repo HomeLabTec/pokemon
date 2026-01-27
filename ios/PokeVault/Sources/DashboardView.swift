@@ -12,19 +12,20 @@ struct DashboardView: View {
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
-            VStack(alignment: .leading, spacing: 16) {
-                header
-                summaryCards
-                portfolioChart
-                Spacer()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    header
+                    summaryCards
+                    portfolioChart
+                }
+                .padding()
             }
-            .padding()
+            .refreshable {
+                await viewModel.loadDashboard()
+            }
         }
         .onAppear {
             Task { await viewModel.loadDashboard() }
-        }
-        .refreshable {
-            await viewModel.loadDashboard()
         }
     }
 
