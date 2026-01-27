@@ -4,6 +4,11 @@ import SwiftUI
 struct DashboardView: View {
     @StateObject private var viewModel = DashboardViewModel()
 
+    private struct ChartPoint: Hashable {
+        let date: Date
+        let total: Double
+    }
+
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
@@ -64,18 +69,19 @@ struct DashboardView: View {
                     .overlay(Text("No snapshots yet").foregroundColor(.white.opacity(0.6)))
                     .frame(height: 200)
             } else {
-                Chart(viewModel.portfolio.compactMap { point in
+                let chartPoints = viewModel.portfolio.compactMap { point -> ChartPoint? in
                     guard let date = point.date else { return nil }
-                    return (date, point.total)
-                }, id: \.0) { point in
+                    return ChartPoint(date: date, total: point.total)
+                }
+                Chart(chartPoints, id: \.date) { point in
                     LineMark(
-                        x: .value("Date", point.0),
-                        y: .value("Total", point.1)
+                        x: .value("Date", point.date),
+                        y: .value("Total", point.total)
                     )
                     .foregroundStyle(.orange)
                     AreaMark(
-                        x: .value("Date", point.0),
-                        y: .value("Total", point.1)
+                        x: .value("Date", point.date),
+                        y: .value("Total", point.total)
                     )
                     .foregroundStyle(.orange.opacity(0.2))
                 }
