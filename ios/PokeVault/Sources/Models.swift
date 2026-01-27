@@ -48,6 +48,13 @@ struct CardDetailResponse: Codable {
     let price_history: [PricePoint]
 }
 
+struct HoldingCardRow: Codable, Hashable {
+    let id: Int
+    let name: String
+    let number: String
+    let rarity: String?
+}
+
 struct HoldingRow: Codable, Identifiable, Hashable {
     let holding_id: Int
     let quantity: Int
@@ -56,7 +63,7 @@ struct HoldingRow: Codable, Identifiable, Hashable {
     let is_wantlist: Bool
     let is_watched: Bool
     let notes: String?
-    let card: CardRow
+    let card: HoldingCardRow
     let set: SetRow
 
     var id: Int { holding_id }
