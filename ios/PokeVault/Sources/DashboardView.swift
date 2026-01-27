@@ -3,6 +3,7 @@ import SwiftUI
 
 struct DashboardView: View {
     @StateObject private var viewModel = DashboardViewModel()
+    @State private var snapshotCooldownUntil: Date? = nil
 
     private struct ChartPoint: Hashable {
         let date: Date
@@ -21,8 +22,7 @@ struct DashboardView: View {
                 .padding()
             }
             .refreshable {
-                await viewModel.createSnapshot()
-                await viewModel.loadDashboard()
+                await viewModel.createSnapshotAndRefresh()
             }
         }
         .onAppear {
@@ -31,12 +31,27 @@ struct DashboardView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Dashboard")
-                .font(.title2.bold())
-            Text("Portfolio snapshot overview")
-                .font(.footnote)
-                .foregroundColor(.white.opacity(0.6))
+        HStack {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Dashboard")
+                    .font(.title2.bold())
+                Text("Portfolio snapshot overview")
+                    .font(.footnote)
+                    .foregroundColor(.white.opacity(0.6))
+            }
+            Spacer()
+            Button {
+                Task { await triggerSnapshot() }
+            } label: {
+                Text("$$")
+                    .font(.headline)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(RoundedRectangle(cornerRadius: 12).stroke(Color.orange))
+                    .foregroundColor(.orange)
+            }
+            .disabled(isSnapshotCoolingDown)
+            .opacity(isSnapshotCoolingDown ? 0.4 : 1)
         }
         .foregroundColor(.white)
     }
@@ -123,5 +138,18 @@ struct DashboardView: View {
             return String(format: "$%.0f", computed)
         }
         return "—"
+    }
+
+    private var isSnapshotCoolingDown: Bool {
+        if let until = snapshotCooldownUntil {
+            return Date() < until
+        }
+        return false
+    }
+
+    private func triggerSnapshot() async {
+        guard !isSnapshotCoolingDown else { return }
+        snapshotCooldownUntil = Date().addingTimeInterval(30)
+        await viewModel.createSnapshotAndRefresh()
     }
 }

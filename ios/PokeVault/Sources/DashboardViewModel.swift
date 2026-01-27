@@ -45,6 +45,11 @@ final class DashboardViewModel: ObservableObject {
         }
     }
 
+    func createSnapshotAndRefresh() async {
+        await createSnapshot()
+        await loadDashboard()
+    }
+
     private func computeTotal(for holdings: [HoldingRow]) async throws -> Double? {
         guard !holdings.isEmpty else { return nil }
         let cardIds = holdings.map { $0.card.id }
