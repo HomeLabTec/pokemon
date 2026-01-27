@@ -6,7 +6,7 @@ struct CatalogView: View {
     @State private var selectedSet: SetRow?
     @State private var detail: CardDetailResponse?
     @State private var showDetail = false
-    @State private var showAddSheet = false
+    @State private var activeSheet: CatalogSheet?
     @State private var quantity = 1
     @State private var condition = "NM"
     @State private var isForTrade = false
@@ -81,40 +81,42 @@ struct CatalogView: View {
                 )
             }
         }
-        .sheet(isPresented: $showAddSheet) {
-            HoldingFormView(
-                title: "Add to holdings",
-                cardName: selectedCard?.name,
-                cardImageURL: selectedCard.flatMap { card in
-                    guard let set = viewModel.sets.first(where: { $0.id == card.set_id }) else { return nil }
-                    return URL(string: "https://images.pokemontcg.io/\(set.code)/\(card.number).png")
-                },
-                quantity: $quantity,
-                condition: $condition,
-                isForTrade: $isForTrade,
-                isWantlist: $isWantlist,
-                isWatched: $isWatched,
-                onSave: { Task { await saveHolding() } },
-                onCancel: { showAddSheet = false }
-            )
-        }
-        .sheet(isPresented: $showFilters) {
-            NavigationStack {
-                Form {
-                    Section("Advanced filters") {
-                        TextField("Rarity", text: $viewModel.rarity)
-                        TextField("Artist", text: $viewModel.artist)
+        .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .add:
+                HoldingFormView(
+                    title: "Add to holdings",
+                    cardName: selectedCard?.name,
+                    cardImageURL: selectedCard.flatMap { card in
+                        guard let set = viewModel.sets.first(where: { $0.id == card.set_id }) else { return nil }
+                        return URL(string: "https://images.pokemontcg.io/\(set.code)/\(card.number).png")
+                    },
+                    quantity: $quantity,
+                    condition: $condition,
+                    isForTrade: $isForTrade,
+                    isWantlist: $isWantlist,
+                    isWatched: $isWatched,
+                    onSave: { Task { await saveHolding() } },
+                    onCancel: { activeSheet = nil }
+                )
+            case .filters:
+                NavigationStack {
+                    Form {
+                        Section("Advanced filters") {
+                            TextField("Rarity", text: $viewModel.rarity)
+                            TextField("Artist", text: $viewModel.artist)
+                        }
                     }
-                }
-                .navigationTitle("Filters")
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Close") { showFilters = false }
-                    }
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Apply") {
-                            Task { await viewModel.loadCards() }
-                            showFilters = false
+                    .navigationTitle("Filters")
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Close") { activeSheet = nil }
+                        }
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Apply") {
+                                Task { await viewModel.loadCards() }
+                                activeSheet = nil
+                            }
                         }
                     }
                 }
@@ -133,7 +135,7 @@ struct CatalogView: View {
             }
             Spacer()
             Button {
-                showFilters = true
+                activeSheet = .filters
             } label: {
                 Image(systemName: "slider.horizontal.3")
                     .font(.title3)
@@ -188,7 +190,10 @@ struct CatalogView: View {
         isForTrade = false
         isWantlist = false
         isWatched = false
-        showAddSheet = true
+        showDetail = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            activeSheet = .add
+        }
     }
 
     private func saveHolding() async {
@@ -205,9 +210,9 @@ struct CatalogView: View {
         do {
             let body = try JSONEncoder().encode(payload)
             _ = try await APIClient.shared.request("holdings", method: "POST", body: body) as HoldingRow
-            showAddSheet = false
+            activeSheet = nil
         } catch {
-            showAddSheet = false
+            activeSheet = nil
         }
     }
 
@@ -254,5 +259,19 @@ struct CatalogCardView: View {
     private var priceText: String {
         guard let price else { return "—" }
         return String(format: "$%.2f", price)
+    }
+}
+
+enum CatalogSheet: Identifiable {
+    case add
+    case filters
+
+    var id: String {
+        switch self {
+        case .add:
+            return "add"
+        case .filters:
+            return "filters"
+        }
     }
 }
