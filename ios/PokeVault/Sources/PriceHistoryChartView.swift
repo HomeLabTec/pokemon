@@ -10,25 +10,27 @@ struct PriceHistoryChartView: View {
     }
 
     var body: some View {
-        if sorted.isEmpty {
+        let chartPoints = sorted.compactMap { point -> (Date, Double)? in
+            guard let date = point.date, let value = point.market else { return nil }
+            return (date, value)
+        }
+        if chartPoints.isEmpty {
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color.white.opacity(0.06))
                 .overlay(Text("No price history yet").foregroundColor(.white.opacity(0.6)))
                 .frame(height: 180)
         } else {
-            Chart(sorted, id: \.ts) { point in
-                if let value = point.market, let date = point.date {
-                    LineMark(
-                        x: .value("Date", date),
-                        y: .value("Price", value)
-                    )
-                    .foregroundStyle(.orange)
-                    AreaMark(
-                        x: .value("Date", date),
-                        y: .value("Price", value)
-                    )
-                    .foregroundStyle(.orange.opacity(0.2))
-                }
+            Chart(chartPoints, id: \.0) { point in
+                LineMark(
+                    x: .value("Date", point.0),
+                    y: .value("Price", point.1)
+                )
+                .foregroundStyle(.orange)
+                AreaMark(
+                    x: .value("Date", point.0),
+                    y: .value("Price", point.1)
+                )
+                .foregroundStyle(.orange.opacity(0.2))
             }
             .frame(height: 180)
             .chartYAxis {

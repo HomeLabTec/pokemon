@@ -63,17 +63,24 @@ struct DashboardView: View {
             Text("Total value")
                 .font(.subheadline.weight(.semibold))
                 .foregroundColor(.white)
-            if viewModel.portfolio.isEmpty {
+            let chartPoints = viewModel.portfolio.compactMap { point -> ChartPoint? in
+                guard let date = point.date else { return nil }
+                return ChartPoint(date: date, total: point.total)
+            }
+            let fallbackPoints: [ChartPoint] = {
+                if let total = viewModel.computedTotal {
+                    return [ChartPoint(date: Date(), total: total)]
+                }
+                return []
+            }()
+            if chartPoints.isEmpty && fallbackPoints.isEmpty {
                 RoundedRectangle(cornerRadius: 16)
                     .fill(Color.white.opacity(0.06))
                     .overlay(Text("No snapshots yet").foregroundColor(.white.opacity(0.6)))
                     .frame(height: 200)
             } else {
-                let chartPoints = viewModel.portfolio.compactMap { point -> ChartPoint? in
-                    guard let date = point.date else { return nil }
-                    return ChartPoint(date: date, total: point.total)
-                }
-                Chart(chartPoints, id: \.date) { point in
+                let points = chartPoints.isEmpty ? fallbackPoints : chartPoints
+                Chart(points, id: \.date) { point in
                     LineMark(
                         x: .value("Date", point.date),
                         y: .value("Total", point.total)
