@@ -4,6 +4,7 @@ import SwiftUI
 struct DashboardView: View {
     @StateObject private var viewModel = DashboardViewModel()
     @State private var snapshotCooldownUntil: Date? = nil
+    @State private var range: RangeOption = .month1
 
     private struct ChartPoint: Hashable {
         let date: Date
@@ -93,18 +94,21 @@ struct DashboardView: View {
                 }
                 return []
             }()
-            if chartPoints.isEmpty && fallbackPoints.isEmpty {
+            let points = chartPoints.isEmpty ? fallbackPoints : chartPoints
+            let filtered = range == .all ? points : points.filter { $0.date >= range.cutoffDate() }
+            if filtered.isEmpty {
                 RoundedRectangle(cornerRadius: 16)
                     .fill(Color.white.opacity(0.06))
                     .overlay(Text("No snapshots yet").foregroundColor(.white.opacity(0.6)))
                     .frame(height: 200)
             } else {
-                let points = chartPoints.isEmpty ? fallbackPoints : chartPoints
-                Chart(points, id: \.date) { point in
+                Chart(filtered, id: \.date) { point in
                     LineMark(
                         x: .value("Date", point.date),
                         y: .value("Total", point.total)
                     )
+                    .interpolationMethod(.catmullRom)
+                    .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
                     .foregroundStyle(.orange)
                     AreaMark(
                         x: .value("Date", point.date),
@@ -119,14 +123,27 @@ struct DashboardView: View {
                 }
                 .frame(height: 200)
                 .chartXAxis {
-                    AxisMarks(values: .automatic(desiredCount: 4))
+                    AxisMarks(values: .automatic(desiredCount: 4)) { _ in
+                        AxisGridLine().foregroundStyle(Color.white.opacity(0.05))
+                        AxisTick().foregroundStyle(Color.white.opacity(0.5))
+                        AxisValueLabel().foregroundStyle(Color.white.opacity(0.6))
+                    }
                 }
                 .chartYAxis {
-                    AxisMarks(position: .leading)
+                    AxisMarks(position: .leading) { value in
+                        AxisGridLine().foregroundStyle(Color.white.opacity(0.08))
+                        AxisTick().foregroundStyle(Color.white.opacity(0.5))
+                        AxisValueLabel() {
+                            if let value = value.as(Double.self) {
+                                Text(String(format: "$%.0f", value))
+                            }
+                        }
+                    }
                 }
                 .padding(12)
                 .background(RoundedRectangle(cornerRadius: 16).fill(Color.white.opacity(0.06)))
             }
+            RangePicker(range: $range)
         }
     }
 
