@@ -5,6 +5,7 @@ struct DashboardView: View {
     @StateObject private var viewModel = DashboardViewModel()
     @State private var snapshotCooldownUntil: Date? = nil
     @State private var range: RangeOption = .month1
+    @AppStorage("accentHex") private var accentHex: String = "#f59e0b"
 
     private struct ChartPoint: Hashable {
         let date: Date
@@ -41,6 +42,7 @@ struct DashboardView: View {
                     .foregroundColor(.white.opacity(0.6))
             }
             Spacer()
+            let accent = Color(hex: accentHex) ?? .orange
             Button {
                 Task { await triggerSnapshot() }
             } label: {
@@ -48,8 +50,8 @@ struct DashboardView: View {
                     .font(.headline)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
-                    .background(RoundedRectangle(cornerRadius: 12).stroke(Color.orange))
-                    .foregroundColor(.orange)
+                    .background(RoundedRectangle(cornerRadius: 12).stroke(accent))
+                    .foregroundColor(accent)
             }
             .disabled(isSnapshotCoolingDown)
             .opacity(isSnapshotCoolingDown ? 0.4 : 1)
@@ -102,6 +104,7 @@ struct DashboardView: View {
                     .overlay(Text("No snapshots yet").foregroundColor(.white.opacity(0.6)))
                     .frame(height: 200)
             } else {
+                let accent = Color(hex: accentHex) ?? .orange
                 Chart(filtered, id: \.date) { point in
                     LineMark(
                         x: .value("Date", point.date),
@@ -109,17 +112,21 @@ struct DashboardView: View {
                     )
                     .interpolationMethod(.catmullRom)
                     .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(
+                        LinearGradient(colors: [accent, accent.opacity(0.6)], startPoint: .leading, endPoint: .trailing)
+                    )
                     AreaMark(
                         x: .value("Date", point.date),
                         y: .value("Total", point.total)
                     )
-                    .foregroundStyle(.orange.opacity(0.2))
+                    .foregroundStyle(
+                        LinearGradient(colors: [accent.opacity(0.25), .clear], startPoint: .top, endPoint: .bottom)
+                    )
                     PointMark(
                         x: .value("Date", point.date),
                         y: .value("Total", point.total)
                     )
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(accent)
                 }
                 .frame(height: 200)
                 .chartXAxis {

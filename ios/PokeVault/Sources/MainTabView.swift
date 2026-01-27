@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct MainTabView: View {
+    @AppStorage("accentHex") private var accentHex: String = "#f59e0b"
+
     var body: some View {
         TabView {
             NavigationStack {
@@ -28,6 +30,6 @@ struct MainTabView: View {
                 Label("Account", systemImage: "person.crop.circle")
             }
         }
-        .tint(.orange)
+        .tint(Color(hex: accentHex) ?? .orange)
     }
 }

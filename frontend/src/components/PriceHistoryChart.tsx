@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Chart from "chart.js/auto";
 
 type PricePoint = {
@@ -14,6 +14,7 @@ type PriceHistoryChartProps = {
 const PriceHistoryChart = ({ data, label }: PriceHistoryChartProps) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const chartRef = useRef<Chart | null>(null);
+  const [range, setRange] = useState("1M");
 
   const chartData = useMemo(() => {
     const points = (data || [])
@@ -23,11 +24,43 @@ const PriceHistoryChart = ({ data, label }: PriceHistoryChartProps) => {
         market: Number(point.market),
       }))
       .sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
+    const deduped = new Map<string, number>();
+    points.forEach((point) => {
+      const day = new Date(point.ts);
+      day.setHours(0, 0, 0, 0);
+      deduped.set(day.toISOString(), point.market);
+    });
+    const entries = Array.from(deduped.entries()).map(([ts, market]) => ({ ts, market }));
+    const cutoff = (() => {
+      const now = new Date();
+      const map: Record<string, number> = {
+        "1D": 1,
+        "7D": 7,
+        "1M": 30,
+        "3M": 90,
+        "6M": 180,
+        "1Y": 365,
+      };
+      if (range === "ALL") return null;
+      const days = map[range] ?? 30;
+      const cutoff = new Date(now);
+      cutoff.setDate(now.getDate() - days);
+      return cutoff.getTime();
+    })();
+    const filtered = entries.filter((point) => {
+      const ts = new Date(point.ts).getTime();
+      return cutoff ? ts >= cutoff : true;
+    });
     return {
-      labels: points.map((point) => new Date(point.ts).toLocaleDateString()),
-      values: points.map((point) => point.market),
+      labels: filtered.map((point) => new Date(point.ts).toLocaleDateString()),
+      values: filtered.map((point) => point.market),
     };
-  }, [data]);
+  }, [data, range]);
+
+  const accent = useMemo(() => {
+    if (typeof window === "undefined") return "#f59e0b";
+    return getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#f59e0b";
+  }, [range]);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -38,6 +71,10 @@ const PriceHistoryChart = ({ data, label }: PriceHistoryChartProps) => {
       chartRef.current.destroy();
     }
 
+    const gradient = ctx.createLinearGradient(0, 0, ctx.canvas.width, 0);
+    gradient.addColorStop(0, accent || "#f59e0b");
+    gradient.addColorStop(1, "rgba(245, 158, 11, 0.6)");
+
     chartRef.current = new Chart(ctx, {
       type: "line",
       data: {
@@ -46,12 +83,13 @@ const PriceHistoryChart = ({ data, label }: PriceHistoryChartProps) => {
           {
             label,
             data: chartData.values,
-            borderColor: "#f97316",
-            backgroundColor: "rgba(249, 115, 22, 0.2)",
-            tension: 0.3,
+            borderColor: gradient,
+            borderWidth: 2.5,
+            backgroundColor: "rgba(245, 158, 11, 0.25)",
+            tension: 0.4,
             fill: true,
-            pointRadius: 2,
-            pointHoverRadius: 4,
+            pointRadius: 3,
+            pointHoverRadius: 5,
           },
         ],
       },
@@ -64,12 +102,12 @@ const PriceHistoryChart = ({ data, label }: PriceHistoryChartProps) => {
               callback: (value) => `$${value}`,
             },
             grid: {
-              color: "rgba(255,255,255,0.06)",
+              color: "rgba(255,255,255,0.08)",
             },
           },
           x: {
             grid: {
-              color: "rgba(255,255,255,0.04)",
+              color: "rgba(255,255,255,0.05)",
             },
           },
         },
@@ -92,7 +130,7 @@ const PriceHistoryChart = ({ data, label }: PriceHistoryChartProps) => {
         chartRef.current = null;
       }
     };
-  }, [chartData.labels, chartData.values, label]);
+  }, [chartData.labels, chartData.values, label, accent]);
 
   if (!chartData.values.length) {
     return (
@@ -103,8 +141,26 @@ const PriceHistoryChart = ({ data, label }: PriceHistoryChartProps) => {
   }
 
   return (
-    <div className="h-48 w-full rounded-xl border border-white/10 bg-base/40 p-3">
-      <canvas ref={canvasRef} />
+    <div className="w-full space-y-3 rounded-xl border border-white/10 bg-base/40 p-3">
+      <div className="flex flex-wrap gap-2">
+        {["1D", "7D", "1M", "3M", "6M", "1Y", "ALL"].map((option) => (
+          <button
+            key={option}
+            className={`rounded-full px-3 py-1 text-xs font-semibold ${
+              range === option
+                ? "bg-accent text-black"
+                : "border border-white/10 text-white/70 hover:border-accent/60 hover:text-accent"
+            }`}
+            onClick={() => setRange(option)}
+            type="button"
+          >
+            {option === "ALL" ? "All" : option}
+          </button>
+        ))}
+      </div>
+      <div className="h-48">
+        <canvas ref={canvasRef} />
+      </div>
     </div>
   );
 };

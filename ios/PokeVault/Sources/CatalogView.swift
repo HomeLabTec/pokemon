@@ -2,6 +2,7 @@ import SwiftUI
 
 struct CatalogView: View {
     @StateObject private var viewModel = CatalogViewModel()
+    @AppStorage("accentHex") private var accentHex: String = "#f59e0b"
     @State private var selectedCard: CardRow?
     @State private var selectedSet: SetRow?
     @State private var detail: CardDetailResponse?
@@ -14,7 +15,6 @@ struct CatalogView: View {
     @State private var isWatched = false
 
     private let columns = [GridItem(.adaptive(minimum: 160), spacing: 16)]
-    @State private var showFilters = false
 
     var body: some View {
         ZStack {
@@ -24,7 +24,7 @@ struct CatalogView: View {
                 header
                 filters
                 if viewModel.isLoading {
-                    ProgressView().tint(.orange)
+                    ProgressView().tint(Color(hex: accentHex) ?? .orange)
                 }
                 ScrollView {
                     LazyVGrid(columns: columns, spacing: 16) {
@@ -139,7 +139,7 @@ struct CatalogView: View {
             } label: {
                 Image(systemName: "slider.horizontal.3")
                     .font(.title3)
-                    .foregroundColor(.orange)
+                    .foregroundColor(Color(hex: accentHex) ?? .orange)
             }
         }
         .padding(.horizontal)
@@ -155,7 +155,7 @@ struct CatalogView: View {
                 }
             }
             .pickerStyle(.menu)
-            .tint(.orange)
+            .tint(Color(hex: accentHex) ?? .orange)
             .onChange(of: viewModel.selectedSetId) { _ in
                 Task { await viewModel.loadCards() }
             }
@@ -241,7 +241,7 @@ struct CatalogCardView: View {
             HStack {
                 Text(priceText)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundColor(.orange)
+                    .foregroundColor(Color(hex: accentHex) ?? .orange)
                 Spacer()
                 Text("NM")
                     .font(.caption2)

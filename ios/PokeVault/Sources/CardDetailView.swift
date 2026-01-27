@@ -16,6 +16,7 @@ struct CardDetailView: View {
     let destructiveActionTitle: String?
     let destructiveAction: (() -> Void)?
 
+    @AppStorage("accentHex") private var accentHex: String = "#f59e0b"
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -28,13 +29,14 @@ struct CardDetailView: View {
                         heroImage
                         detailCard
                         PriceHistoryChartView(points: priceHistory, label: priceLabel)
+                        let accent = Color(hex: accentHex) ?? .orange
                         if let primaryActionTitle, let primaryAction {
                             Button(primaryActionTitle) {
                                 primaryAction()
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 12)
-                            .background(RoundedRectangle(cornerRadius: 18).fill(Color.orange))
+                            .background(RoundedRectangle(cornerRadius: 18).fill(accent))
                             .foregroundColor(.black)
                             .padding(.horizontal)
                         }
@@ -44,8 +46,8 @@ struct CardDetailView: View {
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 12)
-                            .background(RoundedRectangle(cornerRadius: 18).stroke(Color.orange))
-                            .foregroundColor(.orange)
+                            .background(RoundedRectangle(cornerRadius: 18).stroke(accent))
+                            .foregroundColor(accent)
                             .padding(.horizontal)
                             .padding(.bottom, 4)
                         }
@@ -109,7 +111,7 @@ struct CardDetailView: View {
             HStack {
                 Text(latestPriceText)
                     .font(.title3.bold())
-                    .foregroundColor(.orange)
+                    .foregroundColor(Color(hex: accentHex) ?? .orange)
                 Spacer()
                 Text(priceLabel)
                     .font(.caption)

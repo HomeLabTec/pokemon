@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
+import PriceHistoryChart, { PricePoint } from "../components/PriceHistoryChart";
 import { useToast } from "../components/Toast";
 
 type HoldingRow = {
@@ -20,6 +21,11 @@ type GradedRow = {
   id: number;
 };
 
+type PortfolioPoint = {
+  ts: string;
+  total: number;
+};
+
 const API_BASE =
   (import.meta as any).env?.VITE_API_URL ?? `${window.location.origin}/api`;
 
@@ -29,6 +35,7 @@ const Dashboard = () => {
   const [holdings, setHoldings] = useState<HoldingRow[]>([]);
   const [prices, setPrices] = useState<Record<number, PriceRow>>({});
   const [gradedCount, setGradedCount] = useState(0);
+  const [portfolio, setPortfolio] = useState<PortfolioPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -106,6 +113,16 @@ const Dashboard = () => {
       } else {
         setPrices({});
       }
+
+      const portfolioResponse = await fetch(`${API_BASE}/analytics/portfolio`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (portfolioResponse.ok) {
+        const payload = (await portfolioResponse.json()) as { data: PortfolioPoint[] };
+        setPortfolio(payload.data || []);
+      } else {
+        setPortfolio([]);
+      }
     } catch (err: any) {
       setError(err.message || "Failed to load dashboard data");
     } finally {
@@ -180,7 +197,12 @@ const Dashboard = () => {
             ))}
           </div>
         </div>
-        <div className="mt-6 h-56 rounded-xl border border-dashed border-white/10 bg-base/40" />
+        <div className="mt-6">
+          <PriceHistoryChart
+            data={portfolio.map((point) => ({ ts: point.ts, market: point.total } as PricePoint))}
+            label="Portfolio value"
+          />
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">

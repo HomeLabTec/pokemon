@@ -6,6 +6,7 @@ struct PriceHistoryChartView: View {
     let label: String
 
     @State private var range: RangeOption = .month1
+    @AppStorage("accentHex") private var accentHex: String = "#f59e0b"
 
     private struct StyledPoint: Hashable {
         let date: Date
@@ -27,6 +28,7 @@ struct PriceHistoryChartView: View {
                     .overlay(Text("No price history yet").foregroundColor(.white.opacity(0.6)))
                     .frame(height: 190)
             } else {
+                let accent = Color(hex: accentHex) ?? .orange
                 Chart(filtered, id: \.date) { point in
                     LineMark(
                         x: .value("Date", point.date),
@@ -35,7 +37,7 @@ struct PriceHistoryChartView: View {
                     .interpolationMethod(.catmullRom)
                     .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
                     .foregroundStyle(
-                        LinearGradient(colors: [.orange, .yellow], startPoint: .leading, endPoint: .trailing)
+                        LinearGradient(colors: [accent, accent.opacity(0.6)], startPoint: .leading, endPoint: .trailing)
                     )
 
                     AreaMark(
@@ -45,7 +47,7 @@ struct PriceHistoryChartView: View {
                     .interpolationMethod(.catmullRom)
                     .foregroundStyle(
                         LinearGradient(
-                            colors: [.orange.opacity(0.25), .clear],
+                            colors: [accent.opacity(0.25), .clear],
                             startPoint: .top,
                             endPoint: .bottom
                         )
@@ -56,7 +58,7 @@ struct PriceHistoryChartView: View {
                         y: .value("Price", point.value)
                     )
                     .symbolSize(20)
-                    .foregroundStyle(Color.orange)
+                    .foregroundStyle(accent)
                 }
                 .frame(height: 190)
                 .chartYAxis {
@@ -148,8 +150,10 @@ enum RangeOption: String, CaseIterable, Identifiable {
 
 struct RangePicker: View {
     @Binding var range: RangeOption
+    @AppStorage("accentHex") private var accentHex: String = "#f59e0b"
 
     var body: some View {
+        let accent = Color(hex: accentHex) ?? .orange
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 ForEach(RangeOption.allCases) { option in
@@ -161,7 +165,7 @@ struct RangePicker: View {
                     .padding(.vertical, 6)
                     .background(
                         Capsule()
-                            .fill(range == option ? Color.orange : Color.white.opacity(0.08))
+                            .fill(range == option ? accent : Color.white.opacity(0.08))
                     )
                     .foregroundColor(range == option ? .black : .white.opacity(0.7))
                 }

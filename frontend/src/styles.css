@@ -5,3 +5,7 @@
 body {
   font-family: "Inter", system-ui, sans-serif;
 }
+
+:root {
+  --accent: #3aff7a;
+}

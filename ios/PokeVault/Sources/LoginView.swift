@@ -2,6 +2,7 @@ import SwiftUI
 
 struct LoginView: View {
     @StateObject private var auth = AuthViewModel()
+    @AppStorage("accentHex") private var accentHex: String = "#f59e0b"
 
     var body: some View {
         ZStack {
@@ -52,7 +53,7 @@ struct LoginView: View {
                     }
                     .frame(maxWidth: 320)
                     .padding(.vertical, 12)
-                    .background(RoundedRectangle(cornerRadius: 18).fill(Color.orange))
+                    .background(RoundedRectangle(cornerRadius: 18).fill(Color(hex: accentHex) ?? .orange))
                     .foregroundColor(.black)
                 }
                 .disabled(auth.isLoading)

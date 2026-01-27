@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HoldingsView: View {
     @StateObject private var viewModel = HoldingsViewModel()
+    @AppStorage("accentHex") private var accentHex: String = "#f59e0b"
     @State private var selectedHolding: HoldingRow?
     @State private var detail: CardDetailResponse?
     @State private var gradedHistory: [PricePoint] = []
@@ -26,7 +27,7 @@ struct HoldingsView: View {
             VStack(spacing: 16) {
                 header
                 if viewModel.isLoading {
-                    ProgressView().tint(.orange)
+                    ProgressView().tint(Color(hex: accentHex) ?? .orange)
                 }
                 ScrollView {
                     LazyVGrid(columns: columns, spacing: 16) {
@@ -61,7 +62,7 @@ struct HoldingsView: View {
                     }
                 } label: {
                     Label("Sort", systemImage: "arrow.up.arrow.down")
-                        .foregroundColor(.orange)
+                        .foregroundColor(Color(hex: accentHex) ?? .orange)
                 }
             }
         }
@@ -295,7 +296,7 @@ struct HoldingCardView: View {
             HStack {
                 Text(priceText)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundColor(.orange)
+                    .foregroundColor(Color(hex: accentHex) ?? .orange)
                 Spacer()
                 Text(item.condition)
                     .font(.caption2)
@@ -309,7 +310,7 @@ struct HoldingCardView: View {
                     Spacer()
                     Text(gradedPriceText)
                         .font(.caption)
-                        .foregroundColor(.orange.opacity(0.8))
+                        .foregroundColor((Color(hex: accentHex) ?? .orange).opacity(0.8))
                 }
             }
         }
@@ -334,6 +335,7 @@ struct HoldingCardView: View {
 
 struct DetailLoadingView: View {
     let isLoading: Bool
+    @AppStorage("accentHex") private var accentHex: String = "#f59e0b"
 
     var body: some View {
         ZStack {
@@ -341,7 +343,7 @@ struct DetailLoadingView: View {
             VStack(spacing: 16) {
                 if isLoading {
                     ProgressView()
-                        .tint(.orange)
+                        .tint(Color(hex: accentHex) ?? .orange)
                 }
                 Text(isLoading ? "Loading card details..." : "Unable to load card details.")
                     .foregroundColor(.white.opacity(0.7))

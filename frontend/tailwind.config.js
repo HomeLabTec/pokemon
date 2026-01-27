@@ -6,7 +6,7 @@ export default {
       colors: {
         base: "#0b0f0d",
         surface: "#111a16",
-        accent: "#3aff7a",
+        accent: "var(--accent)",
       },
     },
   },
