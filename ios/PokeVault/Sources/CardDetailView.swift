@@ -13,6 +13,8 @@ struct CardDetailView: View {
     let primaryAction: (() -> Void)?
     let secondaryActionTitle: String?
     let secondaryAction: (() -> Void)?
+    let destructiveActionTitle: String?
+    let destructiveAction: (() -> Void)?
 
     @Environment(\.dismiss) private var dismiss
 
@@ -44,6 +46,17 @@ struct CardDetailView: View {
                             .padding(.vertical, 12)
                             .background(RoundedRectangle(cornerRadius: 18).stroke(Color.orange))
                             .foregroundColor(.orange)
+                            .padding(.horizontal)
+                            .padding(.bottom, 4)
+                        }
+                        if let destructiveActionTitle, let destructiveAction {
+                            Button(destructiveActionTitle) {
+                                destructiveAction()
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(RoundedRectangle(cornerRadius: 18).stroke(Color.red))
+                            .foregroundColor(.red)
                             .padding(.horizontal)
                             .padding(.bottom, 8)
                         }

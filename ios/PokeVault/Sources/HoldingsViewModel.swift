@@ -83,4 +83,8 @@ final class HoldingsViewModel: ObservableObject {
         let body = try JSONEncoder().encode(payload)
         _ = try await client.request("holdings/\(holdingId)", method: "PATCH", body: body) as HoldingRow
     }
+
+    func deleteHolding(holdingId: Int) async throws {
+        try await client.requestVoid("holdings/\(holdingId)", method: "DELETE")
+    }
 }

@@ -75,7 +75,9 @@ struct CatalogView: View {
                     primaryActionTitle: "Add to holdings",
                     primaryAction: { presentAddHolding() },
                     secondaryActionTitle: nil,
-                    secondaryAction: nil
+                    secondaryAction: nil,
+                    destructiveActionTitle: nil,
+                    destructiveAction: nil
                 )
             }
         }

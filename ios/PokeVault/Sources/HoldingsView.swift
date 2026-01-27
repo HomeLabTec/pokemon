@@ -77,7 +77,9 @@ struct HoldingsView: View {
                         primaryActionTitle: "Edit holding",
                         primaryAction: { presentEdit(holding) },
                         secondaryActionTitle: "Get graded value",
-                        secondaryAction: { presentGradedLookup(holding) }
+                        secondaryAction: { presentGradedLookup(holding) },
+                        destructiveActionTitle: "Delete holding",
+                        destructiveAction: { presentDelete(holding) }
                     )
                 } else {
                     DetailLoadingView(isLoading: detailLoading)
@@ -201,6 +203,24 @@ struct HoldingsView: View {
             activeSheet = nil
         } catch {
             activeSheet = nil
+        }
+    }
+
+    private func presentDelete(_ item: HoldingRow) {
+        selectedHolding = item
+        showDetail = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            Task { await deleteHolding() }
+        }
+    }
+
+    private func deleteHolding() async {
+        guard let holding = selectedHolding else { return }
+        do {
+            try await viewModel.deleteHolding(holdingId: holding.holding_id)
+            await viewModel.loadHoldings()
+        } catch {
+            // ignore
         }
     }
 

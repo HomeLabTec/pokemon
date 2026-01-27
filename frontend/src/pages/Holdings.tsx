@@ -353,6 +353,36 @@ const Holdings = () => {
     }
   };
 
+  const deleteHolding = async () => {
+    if (!token || !editing) return;
+    setSaving(true);
+    try {
+      const response = await fetch(`${API_BASE}/holdings/${editing.holding_id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) {
+        const message = await response.text();
+        throw new Error(message || `Failed to delete holding (${response.status})`);
+      }
+      notify({
+        title: "Holding deleted",
+        description: "The holding was removed.",
+      });
+      await loadHoldings();
+    } catch (err: any) {
+      notify({
+        title: "Delete failed",
+        description: err.message || "Please try again.",
+      });
+    } finally {
+      setSaving(false);
+      setEditing(null);
+    }
+  };
+
   const upsertGraded = async (cardId: number, draft: HoldingDraft) => {
     const grader = draft.meta.grader;
     const grade = draft.meta.grade;
@@ -639,6 +669,7 @@ const Holdings = () => {
           }}
           onClose={() => setEditing(null)}
           onSave={saveHolding}
+          onDelete={deleteHolding}
           open={!!editing}
         />
       )}
