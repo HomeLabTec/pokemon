@@ -66,6 +66,7 @@ const Holdings = () => {
   const [sets, setSets] = useState<{ id: number; name: string }[]>([]);
   const [selectedSetId, setSelectedSetId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState("value");
   const [cardSize, setCardSize] = useState(200);
   const [imageMap, setImageMap] = useState<Record<number, string>>({});
   const [priceMap, setPriceMap] = useState<Record<number, { market: number | null }>>({});
@@ -355,6 +356,9 @@ const Holdings = () => {
 
   const deleteHolding = async () => {
     if (!token || !editing) return;
+    if (!window.confirm(`Delete holding for ${editing.card.name}? This cannot be undone.`)) {
+      return;
+    }
     setSaving(true);
     try {
       const response = await fetch(`${API_BASE}/holdings/${editing.holding_id}`, {
@@ -471,6 +475,20 @@ const Holdings = () => {
     return true;
   });
 
+  const sorted = [...filtered].sort((a, b) => {
+    if (sortBy === "set") {
+      return a.set.name.localeCompare(b.set.name) || a.card.name.localeCompare(b.card.name);
+    }
+    if (sortBy === "alpha") {
+      return a.card.name.localeCompare(b.card.name);
+    }
+    const aGraded = gradedMap[a.card.id];
+    const bGraded = gradedMap[b.card.id];
+    const aValue = aGraded ? gradedPrices[aGraded.id]?.market : priceMap[a.card.id]?.market;
+    const bValue = bGraded ? gradedPrices[bGraded.id]?.market : priceMap[b.card.id]?.market;
+    return (bValue ?? 0) - (aValue ?? 0);
+  });
+
   useEffect(() => {
     if (!filtered.length) {
       setPriceMap({});
@@ -513,6 +531,15 @@ const Holdings = () => {
               placeholder="Search holdings"
               value={search}
             />
+            <select
+              className="rounded-full bg-base/60 px-4 py-2 text-sm text-white/70"
+              onChange={(event) => setSortBy(event.target.value)}
+              value={sortBy}
+            >
+              <option value="value">Sort: Value</option>
+              <option value="set">Sort: Set</option>
+              <option value="alpha">Sort: A–Z</option>
+            </select>
             <div className="flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-xs text-white/60">
               <span>Size</span>
               <input
@@ -568,7 +595,7 @@ const Holdings = () => {
       )}
 
       <div className="grid gap-4">
-        {!loading && !filtered.length && (
+        {!loading && !sorted.length && (
           <div className="rounded-2xl border border-white/10 bg-surface p-5 text-sm text-white/60">
             No holdings yet. Add cards to your collection to see them here.
           </div>
@@ -577,7 +604,7 @@ const Holdings = () => {
           className="grid gap-4"
           style={{ gridTemplateColumns: `repeat(auto-fit, minmax(${cardSize + 24}px, max-content))` }}
         >
-          {filtered.map((item) => {
+          {sorted.map((item) => {
             const localImage = imageMap[item.card.id];
             const imageUrl = localImage
               ? `${window.location.origin}${localImage}`

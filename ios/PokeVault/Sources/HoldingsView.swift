@@ -8,6 +8,8 @@ struct HoldingsView: View {
     @State private var showDetail = false
     @State private var detailLoading = false
     @State private var activeSheet: HoldingSheet?
+    @State private var showDeleteConfirm = false
+    @State private var sortBy = "value"
     @State private var editQuantity = 1
     @State private var editCondition = "NM"
     @State private var editForTrade = false
@@ -28,7 +30,7 @@ struct HoldingsView: View {
                 }
                 ScrollView {
                     LazyVGrid(columns: columns, spacing: 16) {
-                        ForEach(viewModel.holdings) { item in
+                        ForEach(sortedHoldings) { item in
                             HoldingCardView(
                                 item: item,
                                 price: viewModel.prices[item.card.id]?.market,
@@ -48,6 +50,20 @@ struct HoldingsView: View {
         }
         .onAppear {
             Task { await viewModel.loadHoldings() }
+        }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Picker("Sort", selection: $sortBy) {
+                        Text("Value").tag("value")
+                        Text("Set").tag("set")
+                        Text("A–Z").tag("alpha")
+                    }
+                } label: {
+                    Label("Sort", systemImage: "arrow.up.arrow.down")
+                        .foregroundColor(.orange)
+                }
+            }
         }
         .fullScreenCover(isPresented: $showDetail) {
             if let holding = selectedHolding {
@@ -110,6 +126,16 @@ struct HoldingsView: View {
                     onFetch: { Task { await fetchGraded() } },
                     onCancel: { activeSheet = nil }
                 )
+            }
+        }
+        .alert("Delete holding?", isPresented: $showDeleteConfirm) {
+            Button("Delete", role: .destructive) {
+                Task { await deleteHolding() }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            if let selectedHolding {
+                Text("This will remove \(selectedHolding.card.name) from your holdings.")
             }
         }
     }
@@ -210,7 +236,7 @@ struct HoldingsView: View {
         selectedHolding = item
         showDetail = false
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-            Task { await deleteHolding() }
+            showDeleteConfirm = true
         }
     }
 
@@ -221,6 +247,26 @@ struct HoldingsView: View {
             await viewModel.loadHoldings()
         } catch {
             // ignore
+        }
+    }
+
+    private var sortedHoldings: [HoldingRow] {
+        viewModel.holdings.sorted { lhs, rhs in
+            switch sortBy {
+            case "set":
+                if lhs.set.name == rhs.set.name {
+                    return lhs.card.name < rhs.card.name
+                }
+                return lhs.set.name < rhs.set.name
+            case "alpha":
+                return lhs.card.name < rhs.card.name
+            default:
+                let lhsGraded = viewModel.gradedMap[lhs.card.id]
+                let rhsGraded = viewModel.gradedMap[rhs.card.id]
+                let lhsValue = lhsGraded.flatMap { viewModel.gradedPrices[$0.id] } ?? viewModel.prices[lhs.card.id]?.market ?? 0
+                let rhsValue = rhsGraded.flatMap { viewModel.gradedPrices[$0.id] } ?? viewModel.prices[rhs.card.id]?.market ?? 0
+                return lhsValue > rhsValue
+            }
         }
     }
 

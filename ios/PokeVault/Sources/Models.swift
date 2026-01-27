@@ -153,14 +153,40 @@ final class DateParser {
     static let shared = DateParser()
 
     private let formatter: ISO8601DateFormatter
+    private let fallbackFormatters: [DateFormatter]
 
     private init() {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         self.formatter = formatter
+
+        let formats = [
+            "yyyy-MM-dd'T'HH:mm:ss.SSSZ",
+            "yyyy-MM-dd'T'HH:mm:ssZ",
+            "yyyy-MM-dd HH:mm:ss",
+            "yyyy-MM-dd",
+        ]
+        self.fallbackFormatters = formats.map { format in
+            let formatter = DateFormatter()
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.timeZone = TimeZone(secondsFromGMT: 0)
+            formatter.dateFormat = format
+            return formatter
+        }
     }
 
     func parse(_ value: String) -> Date? {
-        formatter.date(from: value) ?? ISO8601DateFormatter().date(from: value)
+        if let date = formatter.date(from: value) {
+            return date
+        }
+        if let date = ISO8601DateFormatter().date(from: value) {
+            return date
+        }
+        for formatter in fallbackFormatters {
+            if let date = formatter.date(from: value) {
+                return date
+            }
+        }
+        return nil
     }
 }
