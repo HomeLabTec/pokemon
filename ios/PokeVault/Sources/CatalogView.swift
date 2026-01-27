@@ -149,6 +149,7 @@ struct CatalogView: View {
     private var filters: some View {
         VStack(spacing: 12) {
             Picker("Set", selection: $viewModel.selectedSetId) {
+                Text("All sets").tag(Optional<Int>.none)
                 ForEach(viewModel.sets, id: \.id) { set in
                     Text(set.name).tag(Optional(set.id))
                 }
