@@ -27,14 +27,13 @@ final class DashboardViewModel: ObservableObject {
             holdingsCount = holdings.count
             computedTotal = try await computeTotal(for: holdings)
         } catch {
-            holdingsCount = 0
-            computedTotal = nil
+            // keep existing counts on refresh failures
         }
         do {
             let graded: [GradedRow] = try await client.request("graded")
             gradedCount = graded.count
         } catch {
-            gradedCount = 0
+            // keep existing counts on refresh failures
         }
     }
 
