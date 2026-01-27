@@ -471,13 +471,69 @@ def fetch_graded_price(payload: dict, db: Session = Depends(get_db), current_use
                     "source_type": source.type,
                     "cached": False,
                 }
+        if include_ebay:
+            search_params = {
+                "setName": resolved_set_name,
+                "cardNumber": normalize_number(number_value),
+                "search": card.name,
+                "limit": 1,
+                "offset": 0,
+                "includeEbay": "true",
+                "language": "english",
+            }
+            search_url = f"{base_url}/api/v2/cards?{urllib.parse.urlencode({k: v for k, v in search_params.items() if v})}"
+            search_payload, search_error = fetch_json(search_url, retries, backoff, api_key)
+            if debug:
+                logger.info("[graded] v2 search url=%s err=%s", search_url, search_error)
+            search_data = (search_payload or {}).get("data") or []
+            search_entry = search_data[0] if search_data else {}
+            sales_by_grade = extract_sales_by_grade(search_entry)
+            if debug:
+                logger.info("[graded] search salesByGrade keys=%s", list(sales_by_grade.keys()))
+            if sales_by_grade:
+                grade_key = normalize_grade_key(grader, grade)
+                sales = sales_by_grade.get(grade_key) or []
+                mode = os.environ.get("GRADED_SALES_MODE", "last3")
+                max_days = int(os.environ.get("GRADED_SALES_MAX_DAYS", "30"))
+                average = compute_sales_average(sales, mode, max_days)
+                if average is not None:
+                    source = ensure_price_source(db, "pokemonpricetracker_ebay", "PokemonPriceTracker (eBay)")
+                    updated_at = datetime.utcnow()
+                    latest = db.query(LatestPrice).filter(
+                        LatestPrice.entity_type == "graded",
+                        LatestPrice.entity_id == graded.id,
+                        LatestPrice.source_id == source.id,
+                    ).first()
+                    if not latest:
+                        latest = LatestPrice(
+                            entity_type="graded",
+                            entity_id=graded.id,
+                            source_id=source.id,
+                        )
+                        db.add(latest)
+                    latest.currency = "USD"
+                    latest.market = average
+                    latest.updated_at = updated_at
+                    db.add(PriceHistory(
+                        entity_type="graded",
+                        entity_id=graded.id,
+                        source_id=source.id,
+                        ts=updated_at,
+                        market=average,
+                    ))
+                    db.commit()
+                    return {
+                        "graded_id": graded.id,
+                        "market": average,
+                        "source": source.name,
+                        "source_type": source.type,
+                        "cached": False,
+                    }
         if debug:
-            logger.info("[graded] cached card_ref had no graded price; clearing cache")
-        if external:
-            db.delete(external)
-            db.commit()
+            logger.info("[graded] cached card_ref had no graded price; keeping cache")
         card_ref = None
 
+    search_entry = None
     if not card_ref:
         normalized_number = normalize_number(number_value)
         set_slug = slugify_set_name(resolved_set_name or set_row.code)
@@ -493,15 +549,9 @@ def fetch_graded_price(payload: dict, db: Session = Depends(get_db), current_use
             )
         card_number_full = str(card.number).split("/")[0].strip()
         query_variants = [
-            {"setId": set_slug, "cardNumber": normalized_number, "search": card.name},
-            {"setId": set_slug, "cardNumber": card_number_full, "search": card.name},
-            {"setId": set_slug, "cardNumber": normalized_number},
-            {"setId": set_slug, "search": card.name},
             {"setName": resolved_set_name, "cardNumber": normalized_number, "search": card.name},
-            {"setName": resolved_set_name, "search": card.name},
-            {"set": slugify_set_name(resolved_set_name or set_row.code), "cardNumber": normalized_number},
-            {"set": slugify_set_name(resolved_set_name or set_row.code), "search": card.name},
-            {"search": f"{card.name} {resolved_set_name}".strip()},
+            {"setName": resolved_set_name, "cardNumber": card_number_full, "search": card.name},
+            {"setId": set_slug, "cardNumber": normalized_number},
         ]
         data = []
         for params in query_variants:
@@ -589,8 +639,50 @@ def fetch_graded_price(payload: dict, db: Session = Depends(get_db), current_use
             ))
             db.commit()
         search_entry = match
-    else:
-        search_entry = None
+
+    if search_entry:
+        sales_by_grade = extract_sales_by_grade(search_entry)
+        if debug:
+            logger.info("[graded] search salesByGrade keys=%s", list(sales_by_grade.keys()))
+        if sales_by_grade:
+            grade_key = normalize_grade_key(grader, grade)
+            sales = sales_by_grade.get(grade_key) or []
+            mode = os.environ.get("GRADED_SALES_MODE", "last3")
+            max_days = int(os.environ.get("GRADED_SALES_MAX_DAYS", "30"))
+            average = compute_sales_average(sales, mode, max_days)
+            if average is not None:
+                source = ensure_price_source(db, "pokemonpricetracker_ebay", "PokemonPriceTracker (eBay)")
+                updated_at = datetime.utcnow()
+                latest = db.query(LatestPrice).filter(
+                    LatestPrice.entity_type == "graded",
+                    LatestPrice.entity_id == graded.id,
+                    LatestPrice.source_id == source.id,
+                ).first()
+                if not latest:
+                    latest = LatestPrice(
+                        entity_type="graded",
+                        entity_id=graded.id,
+                        source_id=source.id,
+                    )
+                    db.add(latest)
+                latest.currency = "USD"
+                latest.market = average
+                latest.updated_at = updated_at
+                db.add(PriceHistory(
+                    entity_type="graded",
+                    entity_id=graded.id,
+                    source_id=source.id,
+                    ts=updated_at,
+                    market=average,
+                ))
+                db.commit()
+                return {
+                    "graded_id": graded.id,
+                    "market": average,
+                    "source": source.name,
+                    "source_type": source.type,
+                    "cached": False,
+                }
 
     if not card_ref:
         if debug:
