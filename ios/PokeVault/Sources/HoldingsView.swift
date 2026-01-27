@@ -6,6 +6,7 @@ struct HoldingsView: View {
     @State private var detail: CardDetailResponse?
     @State private var gradedHistory: [PricePoint] = []
     @State private var showDetail = false
+    @State private var detailLoading = false
     @State private var showEditSheet = false
     @State private var showGradedSheet = false
     @State private var editQuantity = 1
@@ -49,34 +50,38 @@ struct HoldingsView: View {
             Task { await viewModel.loadHoldings() }
         }
         .fullScreenCover(isPresented: $showDetail) {
-            if let detail, let holding = selectedHolding {
-                let graded = viewModel.gradedMap[holding.card.id]
-                CardDetailView(
-                    title: detail.card.name,
-                    subtitle: "\(holding.set.name) • \(detail.card.number) • \(detail.card.rarity ?? "Unknown rarity")",
-                    imageURL: detail.images.first(where: { $0.kind == "large" && $0.local_path != nil })?.local_path,
-                    fallbackImageURL: remoteImageURL(for: detail.card, set: holding.set),
-                    priceLabel: graded != nil ? "\(graded!.grader) \(graded!.grade) market history" : "NM market history",
-                    latestPrice: graded != nil ? viewModel.gradedPrices[graded!.id] : detail.latest_prices.first?.market,
-                    priceHistory: graded != nil ? gradedHistory : detail.price_history,
-                    details: [
-                        ("Set", holding.set.name),
-                        ("Number", detail.card.number),
-                        ("Rarity", detail.card.rarity ?? ""),
-                        ("Condition", holding.condition),
-                        ("Quantity", "\(holding.quantity)"),
-                        ("Grade", graded != nil ? "\(graded!.grader) \(graded!.grade)" : ""),
-                        ("Supertype", detail.card.supertype ?? ""),
-                        ("Subtypes", detail.card.subtypes?.joined(separator: ", ") ?? ""),
-                        ("Types", detail.card.types?.joined(separator: ", ") ?? ""),
-                        ("HP", detail.card.hp ?? ""),
-                        ("Artist", detail.card.artist ?? ""),
-                    ],
-                    primaryActionTitle: "Edit holding",
-                    primaryAction: { presentEdit(holding) },
-                    secondaryActionTitle: "Get graded value",
-                    secondaryAction: { presentGradedLookup(holding) }
-                )
+            if let holding = selectedHolding {
+                if let detail {
+                    let graded = viewModel.gradedMap[holding.card.id]
+                    CardDetailView(
+                        title: detail.card.name,
+                        subtitle: "\(holding.set.name) • \(detail.card.number) • \(detail.card.rarity ?? "Unknown rarity")",
+                        imageURL: detail.images.first(where: { $0.kind == "large" && $0.local_path != nil })?.local_path,
+                        fallbackImageURL: remoteImageURL(for: detail.card, set: holding.set),
+                        priceLabel: graded != nil ? "\(graded!.grader) \(graded!.grade) market history" : "NM market history",
+                        latestPrice: graded != nil ? viewModel.gradedPrices[graded!.id] : detail.latest_prices.first?.market,
+                        priceHistory: graded != nil ? gradedHistory : detail.price_history,
+                        details: [
+                            ("Set", holding.set.name),
+                            ("Number", detail.card.number),
+                            ("Rarity", detail.card.rarity ?? ""),
+                            ("Condition", holding.condition),
+                            ("Quantity", "\(holding.quantity)"),
+                            ("Grade", graded != nil ? "\(graded!.grader) \(graded!.grade)" : ""),
+                            ("Supertype", detail.card.supertype ?? ""),
+                            ("Subtypes", detail.card.subtypes?.joined(separator: ", ") ?? ""),
+                            ("Types", detail.card.types?.joined(separator: ", ") ?? ""),
+                            ("HP", detail.card.hp ?? ""),
+                            ("Artist", detail.card.artist ?? ""),
+                        ],
+                        primaryActionTitle: "Edit holding",
+                        primaryAction: { presentEdit(holding) },
+                        secondaryActionTitle: "Get graded value",
+                        secondaryAction: { presentGradedLookup(holding) }
+                    )
+                } else {
+                    DetailLoadingView(isLoading: detailLoading)
+                }
             }
         }
         .sheet(isPresented: $showEditSheet) {
@@ -118,6 +123,9 @@ struct HoldingsView: View {
 
     private func openDetail(_ item: HoldingRow) async {
         selectedHolding = item
+        detail = nil
+        detailLoading = true
+        showDetail = true
         do {
             let detail: CardDetailResponse = try await APIClient.shared.request("cards/\(item.card.id)")
             self.detail = detail
@@ -127,10 +135,10 @@ struct HoldingsView: View {
             } else {
                 gradedHistory = []
             }
-            showDetail = true
         } catch {
             // ignore
         }
+        detailLoading = false
     }
 
     private func presentEdit(_ item: HoldingRow) {
@@ -234,5 +242,23 @@ struct HoldingCardView: View {
     private var priceText: String {
         guard let price else { return "—" }
         return String(format: "$%.2f", price)
+    }
+}
+
+struct DetailLoadingView: View {
+    let isLoading: Bool
+
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+            VStack(spacing: 16) {
+                if isLoading {
+                    ProgressView()
+                        .tint(.orange)
+                }
+                Text(isLoading ? "Loading card details..." : "Unable to load card details.")
+                    .foregroundColor(.white.opacity(0.7))
+            }
+        }
     }
 }
