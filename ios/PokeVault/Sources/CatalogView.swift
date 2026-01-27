@@ -82,6 +82,11 @@ struct CatalogView: View {
         .sheet(isPresented: $showAddSheet) {
             HoldingFormView(
                 title: "Add to holdings",
+                cardName: selectedCard?.name,
+                cardImageURL: selectedCard.flatMap { card in
+                    guard let set = viewModel.sets.first(where: { $0.id == card.set_id }) else { return nil }
+                    return URL(string: "https://images.pokemontcg.io/\(set.code)/\(card.number).png")
+                },
                 quantity: $quantity,
                 condition: $condition,
                 isForTrade: $isForTrade,

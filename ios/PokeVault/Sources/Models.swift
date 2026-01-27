@@ -37,7 +37,7 @@ struct PricePoint: Codable, Hashable {
     let market: Double?
 
     var date: Date? {
-        ISO8601DateFormatter().date(from: ts)
+        DateParser.shared.parse(ts)
     }
 }
 
@@ -138,9 +138,29 @@ struct PortfolioPoint: Codable, Hashable {
     let total: Double
     let raw: Double
     let graded: Double
+
+    var date: Date? {
+        DateParser.shared.parse(ts)
+    }
 }
 
 struct PortfolioResponse: Codable {
     let range: String
     let data: [PortfolioPoint]
+}
+
+final class DateParser {
+    static let shared = DateParser()
+
+    private let formatter: ISO8601DateFormatter
+
+    private init() {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        self.formatter = formatter
+    }
+
+    func parse(_ value: String) -> Date? {
+        formatter.date(from: value) ?? ISO8601DateFormatter().date(from: value)
+    }
 }

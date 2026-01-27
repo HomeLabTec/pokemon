@@ -64,15 +64,18 @@ struct DashboardView: View {
                     .overlay(Text("No snapshots yet").foregroundColor(.white.opacity(0.6)))
                     .frame(height: 200)
             } else {
-                Chart(viewModel.portfolio, id: \.ts) { point in
+                Chart(viewModel.portfolio.compactMap { point in
+                    guard let date = point.date else { return nil }
+                    return (date, point.total)
+                }, id: \.0) { point in
                     LineMark(
-                        x: .value("Date", point.ts),
-                        y: .value("Total", point.total)
+                        x: .value("Date", point.0),
+                        y: .value("Total", point.1)
                     )
                     .foregroundStyle(.orange)
                     AreaMark(
-                        x: .value("Date", point.ts),
-                        y: .value("Total", point.total)
+                        x: .value("Date", point.0),
+                        y: .value("Total", point.1)
                     )
                     .foregroundStyle(.orange.opacity(0.2))
                 }
@@ -90,7 +93,12 @@ struct DashboardView: View {
     }
 
     private var latestTotalText: String {
-        guard let last = viewModel.portfolio.last else { return "—" }
-        return String(format: "$%.0f", last.total)
+        if let last = viewModel.portfolio.last {
+            return String(format: "$%.0f", last.total)
+        }
+        if let computed = viewModel.computedTotal {
+            return String(format: "$%.0f", computed)
+        }
+        return "—"
     }
 }

@@ -2,6 +2,8 @@ import SwiftUI
 
 struct HoldingFormView: View {
     let title: String
+    let cardName: String?
+    let cardImageURL: URL?
     @Binding var quantity: Int
     @Binding var condition: String
     @Binding var isForTrade: Bool
@@ -15,6 +17,17 @@ struct HoldingFormView: View {
     var body: some View {
         NavigationStack {
             Form {
+                if let cardName {
+                    Section {
+                        HStack(spacing: 12) {
+                            CachedAsyncImage(url: cardImageURL, cornerRadius: 10)
+                                .frame(width: 56, height: 78)
+                            Text(cardName)
+                                .font(.headline)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
                 Section("Condition") {
                     Picker("Condition", selection: $condition) {
                         ForEach(conditions, id: \.self) { value in

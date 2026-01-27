@@ -32,7 +32,8 @@ struct HoldingsView: View {
                             HoldingCardView(
                                 item: item,
                                 price: viewModel.prices[item.card.id]?.market,
-                                graded: viewModel.gradedMap[item.card.id]
+                                graded: viewModel.gradedMap[item.card.id],
+                                gradedPrice: viewModel.gradedMap[item.card.id].flatMap { viewModel.gradedPrices[$0.id] }
                             )
                             .onTapGesture {
                                 Task { await openDetail(item) }
@@ -88,6 +89,10 @@ struct HoldingsView: View {
             case .edit:
                 HoldingFormView(
                     title: "Edit holding",
+                    cardName: selectedHolding?.card.name,
+                    cardImageURL: selectedHolding.flatMap { holding in
+                        URL(string: "https://images.pokemontcg.io/\(holding.set.code)/\(holding.card.number).png")
+                    },
                     quantity: $editQuantity,
                     condition: $editCondition,
                     isForTrade: $editForTrade,
@@ -208,6 +213,7 @@ struct HoldingCardView: View {
     let item: HoldingRow
     let price: Double?
     let graded: GradedRow?
+    let gradedPrice: Double?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -235,6 +241,9 @@ struct HoldingCardView: View {
                         .font(.caption)
                         .foregroundColor(.white.opacity(0.7))
                     Spacer()
+                    Text(gradedPriceText)
+                        .font(.caption)
+                        .foregroundColor(.orange.opacity(0.8))
                 }
             }
         }
@@ -249,6 +258,11 @@ struct HoldingCardView: View {
     private var priceText: String {
         guard let price else { return "—" }
         return String(format: "$%.2f", price)
+    }
+
+    private var gradedPriceText: String {
+        guard let gradedPrice else { return "—" }
+        return String(format: "$%.2f", gradedPrice)
     }
 }
 
