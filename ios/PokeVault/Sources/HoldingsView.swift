@@ -163,6 +163,7 @@ struct HoldingsView: View {
         do {
             let detail: CardDetailResponse = try await APIClient.shared.request("cards/\(item.card.id)")
             self.detail = detail
+            print("[iOS] holdings price_history sample:", detail.price_history.prefix(5))
             if let graded = viewModel.gradedMap[item.card.id] {
                 let history: GradedHistoryResponse = try await APIClient.shared.request("graded/\(graded.id)/history")
                 gradedHistory = history.price_history
