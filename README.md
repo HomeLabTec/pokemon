@@ -63,6 +63,10 @@ docker compose exec backend python -m app.scripts.refresh_graded_prices
 ```
 
 ```bash
+docker compose exec backend python -m app.scripts.snapshot_portfolio
+```
+
+```bash
 docker compose exec backend python -m app.scripts.create_user --email you@example.com --name "Your Name" --password "your-password"
 ```
 
