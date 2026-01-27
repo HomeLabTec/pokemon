@@ -21,6 +21,7 @@ struct DashboardView: View {
                 .padding()
             }
             .refreshable {
+                await viewModel.createSnapshot()
                 await viewModel.loadDashboard()
             }
         }

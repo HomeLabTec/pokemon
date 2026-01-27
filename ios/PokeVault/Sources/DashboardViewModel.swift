@@ -35,6 +35,14 @@ final class DashboardViewModel: ObservableObject {
         }
     }
 
+    func createSnapshot() async {
+        do {
+            try await client.requestVoid("analytics/portfolio/snapshot", method: "POST")
+        } catch {
+            // ignore
+        }
+    }
+
     private func computeTotal(for holdings: [HoldingRow]) async throws -> Double? {
         guard !holdings.isEmpty else { return nil }
         let cardIds = holdings.map { $0.card.id }
