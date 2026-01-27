@@ -828,3 +828,21 @@ def graded_detail(graded_id: int, db: Session = Depends(get_db), current_user: U
         "graded": GradedOut.model_validate(graded),
         "tag_details": tag_details.subgrades_json if tag_details else None,
     }
+
+
+@router.get("/{graded_id}/history")
+def graded_history(graded_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    graded = db.query(GradedItem).filter(GradedItem.id == graded_id, GradedItem.user_id == current_user.id).first()
+    if not graded:
+        raise HTTPException(status_code=404, detail="Graded item not found")
+    history = (
+        db.query(PriceHistory)
+        .filter(PriceHistory.entity_type == "graded", PriceHistory.entity_id == graded_id)
+        .order_by(PriceHistory.ts.desc())
+        .limit(200)
+        .all()
+    )
+    return {
+        "graded": GradedOut.model_validate(graded),
+        "price_history": [{"ts": h.ts, "market": h.market} for h in history],
+    }

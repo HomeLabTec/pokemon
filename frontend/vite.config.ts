@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
+    allowedHosts: ["poke.taconetwork.net"],
     hmr: {
       clientPort: 8080,
     },

@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
+import CardDetailModal from "../components/CardDetailModal";
 import { useToast } from "../components/Toast";
 import HoldingModal, { buildHoldingNotes, HoldingDraft } from "../components/HoldingModal";
+import type { PricePoint } from "../components/PriceHistoryChart";
 
 type SetRow = {
   id: number;
@@ -24,7 +26,16 @@ type CardImageRow = {
 };
 
 type CardDetail = {
+  card: CardRow & {
+    supertype?: string | null;
+    subtypes?: string[] | null;
+    types?: string[] | null;
+    hp?: string | null;
+    artist?: string | null;
+  };
   images: CardImageRow[];
+  price_history?: PricePoint[];
+  latest_prices?: { market: number | null }[];
 };
 
 type PriceRow = {
@@ -53,6 +64,12 @@ const Catalog = () => {
   const [activeSetName, setActiveSetName] = useState<string | undefined>(undefined);
   const [priceMap, setPriceMap] = useState<Record<number, PriceRow>>({});
   const [cardSize, setCardSize] = useState(220);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailCard, setDetailCard] = useState<CardDetail["card"] | null>(null);
+  const [detailSet, setDetailSet] = useState<SetRow | null>(null);
+  const [detailImage, setDetailImage] = useState("");
+  const [detailHistory, setDetailHistory] = useState<PricePoint[]>([]);
+  const [detailLatest, setDetailLatest] = useState<number | null>(null);
 
   const setById = useMemo(() => {
     const map = new Map<number, SetRow>();
@@ -266,6 +283,35 @@ const Catalog = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSetId, search, token]);
 
+  const openCardDetail = async (card: CardRow) => {
+    if (!token) return;
+    setDetailOpen(true);
+    setDetailSet(setById.get(card.set_id) ?? null);
+    setDetailHistory([]);
+    setDetailLatest(priceMap[card.id]?.market ?? null);
+    try {
+      const response = await fetch(`${API_BASE}/cards/${card.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) {
+        throw new Error("Failed to load card details");
+      }
+      const detail = (await response.json()) as CardDetail;
+      const localLarge = detail.images.find((img) => img.kind === "large" && img.local_path)?.local_path;
+      const localSmall = detail.images.find((img) => img.kind === "small" && img.local_path)?.local_path;
+      const setRow = setById.get(card.set_id);
+      const fallback = setRow?.code
+        ? `https://images.pokemontcg.io/${setRow.code}/${card.number}.png`
+        : "";
+      setDetailImage(localLarge || localSmall ? `${window.location.origin}${localLarge || localSmall}` : fallback);
+      setDetailCard(detail.card);
+      setDetailHistory(detail.price_history ?? []);
+      setDetailLatest(detail.latest_prices?.[0]?.market ?? priceMap[card.id]?.market ?? null);
+    } catch {
+      setDetailCard(card as CardDetail["card"]);
+    }
+  };
+
   return (
     <section className="space-y-6">
       <div className="rounded-2xl border border-white/10 bg-surface p-6">
@@ -366,12 +412,18 @@ const Catalog = () => {
                 style={{ width: `${cardSize + 24}px` }}
               >
                 {imageUrl ? (
-                  <img
-                    className="rounded-xl object-cover"
-                    style={{ width: `${cardSize}px`, height: `${Math.round(cardSize * 1.33)}px` }}
-                    src={imageUrl}
-                    alt={card.name}
-                  />
+                  <button
+                    className="block"
+                    onClick={() => openCardDetail(card)}
+                    type="button"
+                  >
+                    <img
+                      className="rounded-xl object-cover"
+                      style={{ width: `${cardSize}px`, height: `${Math.round(cardSize * 1.33)}px` }}
+                      src={imageUrl}
+                      alt={card.name}
+                    />
+                  </button>
                 ) : (
                   <div
                     className="rounded-xl bg-base/50"
@@ -427,6 +479,31 @@ const Catalog = () => {
           open={!!activeCard}
         />
       )}
+      <CardDetailModal
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        title={detailCard?.name ?? "Card detail"}
+        subtitle={
+          detailSet
+            ? `${detailSet.name} • ${detailCard?.number ?? ""} • ${detailCard?.rarity ?? "Unknown rarity"}`
+            : undefined
+        }
+        imageUrl={detailImage}
+        latestPrice={detailLatest}
+        priceLabel="NM market history"
+        priceHistory={detailHistory}
+        details={[
+          { label: "Set", value: detailSet?.name },
+          { label: "Series", value: detailSet?.series },
+          { label: "Number", value: detailCard?.number },
+          { label: "Rarity", value: detailCard?.rarity },
+          { label: "Supertype", value: detailCard?.supertype },
+          { label: "Subtypes", value: detailCard?.subtypes?.join(", ") },
+          { label: "Types", value: detailCard?.types?.join(", ") },
+          { label: "HP", value: detailCard?.hp },
+          { label: "Artist", value: detailCard?.artist },
+        ]}
+      />
     </section>
   );
 };

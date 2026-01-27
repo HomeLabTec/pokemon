@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
+import CardDetailModal from "../components/CardDetailModal";
 import { useToast } from "../components/Toast";
 import HoldingModal, {
   buildHoldingNotes,
@@ -7,6 +8,7 @@ import HoldingModal, {
   HoldingDraft,
 } from "../components/HoldingModal";
 import GradedValueModal, { GradedRequest } from "../components/GradedValueModal";
+import type { PricePoint } from "../components/PriceHistoryChart";
 
 type HoldingRow = {
   holding_id: number;
@@ -36,6 +38,24 @@ type GradedRow = {
   grade: string;
 };
 
+type CardImageRow = {
+  kind: string;
+  local_path?: string | null;
+};
+
+type CardDetail = {
+  images: CardImageRow[];
+  card?: {
+    supertype?: string | null;
+    subtypes?: string[] | null;
+    types?: string[] | null;
+    hp?: string | null;
+    artist?: string | null;
+  };
+  price_history?: PricePoint[];
+  latest_prices?: { market: number | null }[];
+};
+
 const API_BASE =
   (import.meta as any).env?.VITE_API_URL ?? `${window.location.origin}/api`;
 
@@ -57,6 +77,26 @@ const Holdings = () => {
   const [saving, setSaving] = useState(false);
   const [gradingCard, setGradingCard] = useState<HoldingRow | null>(null);
   const [gradedCooldowns, setGradedCooldowns] = useState<Record<number, number>>({});
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailImage, setDetailImage] = useState("");
+  const [detailHistory, setDetailHistory] = useState<PricePoint[]>([]);
+  const [detailLatest, setDetailLatest] = useState<number | null>(null);
+  const [detailMeta, setDetailMeta] = useState<{
+    name?: string;
+    number?: string;
+    rarity?: string | null;
+    setName?: string;
+    supertype?: string | null;
+    subtypes?: string[] | null;
+    types?: string[] | null;
+    hp?: string | null;
+    artist?: string | null;
+    condition?: string;
+    quantity?: number;
+    grader?: string;
+    grade?: string;
+    gradedId?: number;
+  } | null>(null);
 
   const loadHoldings = async () => {
     if (!token) return;
@@ -139,6 +179,65 @@ const Holdings = () => {
       setImageMap(nextMap);
     } catch {
       setImageMap({});
+    }
+  };
+
+  const openCardDetail = async (item: HoldingRow) => {
+    if (!token) return;
+    const localImage = imageMap[item.card.id];
+    const imageUrl = localImage
+      ? `${window.location.origin}${localImage}`
+      : `https://images.pokemontcg.io/${item.set.code}/${item.card.number}.png`;
+    setDetailImage(imageUrl);
+    setDetailOpen(true);
+    setDetailHistory([]);
+    setDetailLatest(priceMap[item.card.id]?.market ?? null);
+    const graded = gradedMap[item.card.id];
+    setDetailMeta({
+      name: item.card.name,
+      number: item.card.number,
+      rarity: item.card.rarity ?? null,
+      setName: item.set.name,
+      condition: item.condition,
+      quantity: item.quantity,
+      grader: graded?.grader,
+      grade: graded?.grade,
+      gradedId: graded?.id,
+    });
+    try {
+      const response = await fetch(`${API_BASE}/cards/${item.card.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const detail = (await response.json()) as CardDetail;
+        const localLarge = detail.images.find((img) => img.kind === "large" && img.local_path)?.local_path;
+        if (localLarge) {
+          setDetailImage(`${window.location.origin}${localLarge}`);
+        }
+        setDetailLatest(detail.latest_prices?.[0]?.market ?? priceMap[item.card.id]?.market ?? null);
+        setDetailMeta((prev) => ({
+          ...prev,
+          supertype: detail.card?.supertype ?? null,
+          subtypes: detail.card?.subtypes ?? null,
+          types: detail.card?.types ?? null,
+          hp: detail.card?.hp ?? null,
+          artist: detail.card?.artist ?? null,
+        }));
+        if (!graded) {
+          setDetailHistory(detail.price_history ?? []);
+        }
+      }
+      if (graded) {
+        const gradedResponse = await fetch(`${API_BASE}/graded/${graded.id}/history`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (gradedResponse.ok) {
+          const gradedPayload = (await gradedResponse.json()) as { price_history: PricePoint[] };
+          setDetailHistory(gradedPayload.price_history ?? []);
+        }
+      }
+    } catch {
+      // ignore detail errors
     }
   };
 
@@ -461,12 +560,14 @@ const Holdings = () => {
                 className="rounded-2xl border border-white/10 bg-surface p-4"
                 style={{ width: `${cardSize + 24}px` }}
               >
-                <img
-                  className="rounded-xl object-cover"
-                  style={{ width: `${cardSize}px`, height: `${Math.round(cardSize * 1.33)}px` }}
-                  src={imageUrl}
-                  alt={item.card.name}
-                />
+                <button className="block" onClick={() => openCardDetail(item)} type="button">
+                  <img
+                    className="rounded-xl object-cover"
+                    style={{ width: `${cardSize}px`, height: `${Math.round(cardSize * 1.33)}px` }}
+                    src={imageUrl}
+                    alt={item.card.name}
+                  />
+                </button>
                 <div className="mt-4">
                   <h3 className="text-sm font-semibold">{item.card.name}</h3>
                   <p className="text-xs text-white/50">
@@ -556,6 +657,45 @@ const Holdings = () => {
           open={!!gradingCard}
         />
       )}
+      <CardDetailModal
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        title={detailMeta?.name ?? "Card detail"}
+        subtitle={
+          detailMeta?.setName
+            ? `${detailMeta.setName} • ${detailMeta?.number ?? ""} • ${detailMeta?.rarity ?? "Unknown rarity"}`
+            : undefined
+        }
+        imageUrl={detailImage}
+        latestPrice={
+          detailMeta?.gradedId ? gradedPrices[detailMeta.gradedId]?.market ?? detailLatest : detailLatest
+        }
+        priceLabel={
+          detailMeta?.grader && detailMeta?.grade
+            ? `${detailMeta.grader} ${detailMeta.grade} market history`
+            : "NM market history"
+        }
+        priceHistory={detailHistory}
+        details={[
+          { label: "Set", value: detailMeta?.setName },
+          { label: "Number", value: detailMeta?.number },
+          { label: "Rarity", value: detailMeta?.rarity },
+          { label: "Condition", value: detailMeta?.condition },
+          { label: "Quantity", value: detailMeta?.quantity },
+          {
+            label: "Grade",
+            value:
+              detailMeta?.grader && detailMeta?.grade
+                ? `${detailMeta.grader} ${detailMeta.grade}`
+                : undefined,
+          },
+          { label: "Supertype", value: detailMeta?.supertype },
+          { label: "Subtypes", value: detailMeta?.subtypes?.join(", ") },
+          { label: "Types", value: detailMeta?.types?.join(", ") },
+          { label: "HP", value: detailMeta?.hp },
+          { label: "Artist", value: detailMeta?.artist },
+        ]}
+      />
     </section>
   );
 };
