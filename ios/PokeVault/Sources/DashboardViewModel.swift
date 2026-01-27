@@ -15,9 +15,12 @@ final class DashboardViewModel: ObservableObject {
         defer { isLoading = false }
         do {
             let response: PortfolioResponse = try await client.request("analytics/portfolio")
-            portfolio = response.data.sorted { $0.ts < $1.ts }
+            let sorted = response.data.sorted { $0.ts < $1.ts }
+            if !sorted.isEmpty || portfolio.isEmpty {
+                portfolio = sorted
+            }
         } catch {
-            portfolio = []
+            // keep existing data on refresh failures
         }
         do {
             let holdings: [HoldingRow] = try await client.request("holdings/my")
