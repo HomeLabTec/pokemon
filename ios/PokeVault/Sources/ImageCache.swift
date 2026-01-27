@@ -18,7 +18,7 @@ final class ImageCache {
     }
 
     func image(for url: URL) async throws -> UIImage {
-        let fileURL = cacheDir.appendingPathComponent(url.lastPathComponent)
+        let fileURL = cacheDir.appendingPathComponent(cacheKey(for: url))
         if let data = try? Data(contentsOf: fileURL), let image = UIImage(data: data) {
             return image
         }
@@ -28,6 +28,13 @@ final class ImageCache {
             return image
         }
         throw NSError(domain: "ImageCache", code: -1)
+    }
+
+    private func cacheKey(for url: URL) -> String {
+        let raw = url.absoluteString
+        let hashed = String(raw.hashValue)
+        let ext = url.pathExtension.isEmpty ? "img" : url.pathExtension
+        return "img_\(hashed).\(ext)"
     }
 }
 

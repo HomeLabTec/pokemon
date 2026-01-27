@@ -7,8 +7,7 @@ struct HoldingsView: View {
     @State private var gradedHistory: [PricePoint] = []
     @State private var showDetail = false
     @State private var detailLoading = false
-    @State private var showEditSheet = false
-    @State private var showGradedSheet = false
+    @State private var activeSheet: HoldingSheet?
     @State private var editQuantity = 1
     @State private var editCondition = "NM"
     @State private var editForTrade = false
@@ -84,25 +83,27 @@ struct HoldingsView: View {
                 }
             }
         }
-        .sheet(isPresented: $showEditSheet) {
-            HoldingFormView(
-                title: "Edit holding",
-                quantity: $editQuantity,
-                condition: $editCondition,
-                isForTrade: $editForTrade,
-                isWantlist: $editWantlist,
-                isWatched: $editWatched,
-                onSave: { Task { await saveEdit() } },
-                onCancel: { showEditSheet = false }
-            )
-        }
-        .sheet(isPresented: $showGradedSheet) {
-            GradedLookupView(
-                grader: $grader,
-                grade: $grade,
-                onFetch: { Task { await fetchGraded() } },
-                onCancel: { showGradedSheet = false }
-            )
+        .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .edit:
+                HoldingFormView(
+                    title: "Edit holding",
+                    quantity: $editQuantity,
+                    condition: $editCondition,
+                    isForTrade: $editForTrade,
+                    isWantlist: $editWantlist,
+                    isWatched: $editWatched,
+                    onSave: { Task { await saveEdit() } },
+                    onCancel: { activeSheet = nil }
+                )
+            case .graded:
+                GradedLookupView(
+                    grader: $grader,
+                    grade: $grade,
+                    onFetch: { Task { await fetchGraded() } },
+                    onCancel: { activeSheet = nil }
+                )
+            }
         }
     }
 
@@ -147,7 +148,10 @@ struct HoldingsView: View {
         editForTrade = item.is_for_trade
         editWantlist = item.is_wantlist
         editWatched = item.is_watched
-        showEditSheet = true
+        showDetail = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            activeSheet = .edit
+        }
     }
 
     private func saveEdit() async {
@@ -163,9 +167,9 @@ struct HoldingsView: View {
         do {
             try await viewModel.updateHolding(holdingId: holding.holding_id, payload: payload)
             await viewModel.loadHoldings()
-            showEditSheet = false
+            activeSheet = nil
         } catch {
-            showEditSheet = false
+            activeSheet = nil
         }
     }
 
@@ -177,7 +181,10 @@ struct HoldingsView: View {
             grader = "PSA"
             grade = ""
         }
-        showGradedSheet = true
+        showDetail = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            activeSheet = .graded
+        }
     }
 
     private func fetchGraded() async {
@@ -186,9 +193,9 @@ struct HoldingsView: View {
             _ = try await viewModel.fetchGradedPrice(cardId: holding.card.id, grader: grader, grade: grade)
             await viewModel.loadGraded()
             await viewModel.loadGradedPrices()
-            showGradedSheet = false
+            activeSheet = nil
         } catch {
-            showGradedSheet = false
+            activeSheet = nil
         }
     }
 
@@ -259,6 +266,20 @@ struct DetailLoadingView: View {
                 Text(isLoading ? "Loading card details..." : "Unable to load card details.")
                     .foregroundColor(.white.opacity(0.7))
             }
+        }
+    }
+}
+
+enum HoldingSheet: Identifiable {
+    case edit
+    case graded
+
+    var id: String {
+        switch self {
+        case .edit:
+            return "edit"
+        case .graded:
+            return "graded"
         }
     }
 }
