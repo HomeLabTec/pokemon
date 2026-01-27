@@ -23,6 +23,9 @@ struct DashboardView: View {
         .onAppear {
             Task { await viewModel.loadDashboard() }
         }
+        .refreshable {
+            await viewModel.loadDashboard()
+        }
     }
 
     private var header: some View {
