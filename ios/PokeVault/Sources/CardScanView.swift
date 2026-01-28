@@ -21,6 +21,7 @@ final class CardScanViewModel: ObservableObject {
     @Published var manualQuery: String = ""
     @Published var manualResults: [CardRow] = []
     @Published var selectedCard: CardRow?
+    @Published var matchedImageURL: URL?
     @Published var errorMessage: String?
     @Published var sets: [SetRow] = []
     @Published var isSearching = false
@@ -44,6 +45,7 @@ final class CardScanViewModel: ObservableObject {
         matches = []
         manualResults = []
         selectedCard = nil
+        matchedImageURL = nil
         rawOCR = ""
 
         let resized = image.resized(maxDimension: 1800)
@@ -102,11 +104,16 @@ final class CardScanViewModel: ObservableObject {
                 step = .notFound
                 matches = []
                 selectedCard = nil
+                matchedImageURL = nil
             } else if filtered.count == 1 {
-                selectedCard = filtered.first
+                if let card = filtered.first {
+                    selectedCard = card
+                    await loadMatchedImage(for: card)
+                }
                 step = .confirm
             } else {
                 matches = filtered
+                matchedImageURL = nil
                 step = .multipleMatches
             }
         } catch {
@@ -136,6 +143,7 @@ final class CardScanViewModel: ObservableObject {
     func selectCard(_ card: CardRow) {
         selectedCard = card
         step = .confirm
+        Task { await loadMatchedImage(for: card) }
     }
 
     func reset() {
@@ -148,12 +156,29 @@ final class CardScanViewModel: ObservableObject {
         manualQuery = ""
         manualResults = []
         selectedCard = nil
+        matchedImageURL = nil
         errorMessage = nil
         rawOCR = ""
     }
 
     func setForCard(_ card: CardRow) -> SetRow? {
         sets.first { $0.id == card.set_id }
+    }
+
+    private func loadMatchedImage(for card: CardRow) async {
+        if let set = setForCard(card) {
+            matchedImageURL = URL(string: "https://images.pokemontcg.io/\(set.code)/\(card.number).png")
+            return
+        }
+        do {
+            let detail: CardDetailResponse = try await client.request("cards/\(card.id)")
+            if let local = detail.images.first(where: { $0.kind == "large" && $0.local_path != nil })?.local_path,
+               let url = URL(string: local) {
+                matchedImageURL = url
+            }
+        } catch {
+            matchedImageURL = nil
+        }
     }
 
     private func normalizeNumber(_ value: String) -> String {
@@ -169,7 +194,6 @@ struct CardScanView: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage("accentHex") private var accentHex: String = "#f59e0b"
     @StateObject private var viewModel = CardScanViewModel()
-    @State private var showSourcePicker = false
     @State private var showImagePicker = false
     @State private var pickerSource: UIImagePickerController.SourceType = .photoLibrary
     @State private var showHoldingSheet = false
@@ -224,19 +248,6 @@ struct CardScanView: View {
             }
         }
         .onAppear { Task { await viewModel.loadSets() } }
-        .confirmationDialog("Choose photo source", isPresented: $showSourcePicker) {
-            if UIImagePickerController.isSourceTypeAvailable(.camera) {
-                Button("Take Photo") {
-                    pickerSource = .camera
-                    showImagePicker = true
-                }
-            }
-            Button("Choose from Library") {
-                pickerSource = .photoLibrary
-                showImagePicker = true
-            }
-            Button("Cancel", role: .cancel) {}
-        }
         .sheet(isPresented: $showImagePicker) {
             ImagePicker(sourceType: pickerSource) { image in
                 viewModel.image = image
@@ -294,7 +305,7 @@ struct CardScanView: View {
     private var idleControls: some View {
         VStack(spacing: 12) {
             Button {
-                showSourcePicker = true
+                openCamera()
             } label: {
                 Label("Scan a card", systemImage: "camera.viewfinder")
                     .frame(maxWidth: .infinity)
@@ -302,9 +313,13 @@ struct CardScanView: View {
                     .background(RoundedRectangle(cornerRadius: 16).fill(colorFromHex(accentHex) ?? .orange))
                     .foregroundColor(.black)
             }
+            Button("Choose from library") {
+                openLibrary()
+            }
+            .foregroundColor(.white.opacity(0.8))
             if viewModel.image != nil {
                 Button("Pick a different photo") {
-                    showSourcePicker = true
+                    openLibrary()
                 }
                 .foregroundColor(.white.opacity(0.8))
             }
@@ -348,7 +363,7 @@ struct CardScanView: View {
                 Text("Confirm match")
                     .foregroundColor(.white)
                     .font(.headline)
-                CachedAsyncImage(url: imageURL(for: selectedCard), cornerRadius: 14)
+                CachedAsyncImage(url: viewModel.matchedImageURL ?? imageURL(for: selectedCard), cornerRadius: 14)
                     .frame(width: 200, height: 280)
                 Text(selectedCard.name)
                     .foregroundColor(.white)
@@ -477,5 +492,19 @@ struct CardScanView: View {
             showHoldingSheet = false
             viewModel.errorMessage = "Unable to add holding."
         }
+    }
+
+    private func openCamera() {
+        if UIImagePickerController.isSourceTypeAvailable(.camera) {
+            pickerSource = .camera
+        } else {
+            pickerSource = .photoLibrary
+        }
+        showImagePicker = true
+    }
+
+    private func openLibrary() {
+        pickerSource = .photoLibrary
+        showImagePicker = true
     }
 }
