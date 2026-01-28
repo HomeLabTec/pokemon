@@ -97,24 +97,34 @@ final class CardScanViewModel: ObservableObject {
             let result: [CardRow] = try await client.request(path)
             let normalizedName = normalizeName(name)
             let normalizedNumber = normalizeNumber(number)
-            let filtered = result.filter {
+            let strictMatches = result.filter {
                 normalizeName($0.name) == normalizedName && normalizeNumber($0.number) == normalizedNumber
             }
-            if filtered.isEmpty {
+            if !strictMatches.isEmpty {
+                if strictMatches.count == 1 {
+                    if let card = strictMatches.first {
+                        selectedCard = card
+                        await loadMatchedImage(for: card)
+                    }
+                    step = .confirm
+                } else {
+                    matches = strictMatches
+                    matchedImageURL = nil
+                    step = .multipleMatches
+                }
+                return
+            }
+
+            let nameMatches = result.filter { normalizeName($0.name) == normalizedName }
+            if !nameMatches.isEmpty {
+                matches = nameMatches
+                matchedImageURL = nil
+                step = .multipleMatches
+            } else {
                 step = .notFound
                 matches = []
                 selectedCard = nil
                 matchedImageURL = nil
-            } else if filtered.count == 1 {
-                if let card = filtered.first {
-                    selectedCard = card
-                    await loadMatchedImage(for: card)
-                }
-                step = .confirm
-            } else {
-                matches = filtered
-                matchedImageURL = nil
-                step = .multipleMatches
             }
         } catch {
             errorMessage = "Unable to search your catalog."
