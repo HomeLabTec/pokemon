@@ -18,5 +18,22 @@
   </array>
   <key>UIRequiresFullScreen</key>
   <false/>
+  <key>NSCameraUsageDescription</key>
+  <string>Allow camera access to scan Pokémon cards.</string>
+  <key>NSPhotoLibraryUsageDescription</key>
+  <string>Allow photo library access to select Pokémon card images.</string>
+  <key>NSAppTransportSecurity</key>
+  <dict>
+    <key>NSAllowsArbitraryLoads</key>
+    <false/>
+    <key>NSExceptionDomains</key>
+    <dict>
+      <key>172.22.22.51</key>
+      <dict>
+        <key>NSExceptionAllowsInsecureHTTPLoads</key>
+        <true/>
+      </dict>
+    </dict>
+  </dict>
 </dict>
 </plist>

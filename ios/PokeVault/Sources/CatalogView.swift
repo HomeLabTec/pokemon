@@ -7,6 +7,7 @@ struct CatalogView: View {
     @State private var selectedSet: SetRow?
     @State private var detail: CardDetailResponse?
     @State private var showDetail = false
+    @State private var showScan = false
     @State private var activeSheet: CatalogSheet?
     @State private var quantity = 1
     @State private var condition = "NM"
@@ -81,6 +82,9 @@ struct CatalogView: View {
                 )
             }
         }
+        .fullScreenCover(isPresented: $showScan) {
+            CardScanView()
+        }
         .sheet(item: $activeSheet) { sheet in
             switch sheet {
             case .add:
@@ -134,12 +138,21 @@ struct CatalogView: View {
                     .font(.footnote)
             }
             Spacer()
-            Button {
-                activeSheet = .filters
-            } label: {
-                Image(systemName: "slider.horizontal.3")
-                    .font(.title3)
-                    .foregroundColor(colorFromHex(accentHex) ?? .orange)
+            HStack(spacing: 12) {
+                Button {
+                    showScan = true
+                } label: {
+                    Image(systemName: "camera.viewfinder")
+                        .font(.title3)
+                        .foregroundColor(colorFromHex(accentHex) ?? .orange)
+                }
+                Button {
+                    activeSheet = .filters
+                } label: {
+                    Image(systemName: "slider.horizontal.3")
+                        .font(.title3)
+                        .foregroundColor(colorFromHex(accentHex) ?? .orange)
+                }
             }
         }
         .padding(.horizontal)

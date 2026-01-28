@@ -133,6 +133,15 @@ struct GradedPricesResponse: Codable {
     let prices: [GradedPriceRow]
 }
 
+struct CardIdentifyOCR: Codable {
+    let name: String?
+    let number: String?
+}
+
+struct CardIdentifyResponse: Codable {
+    let ocr: CardIdentifyOCR?
+}
+
 struct PortfolioPoint: Codable, Hashable {
     let ts: String
     let total: Double
