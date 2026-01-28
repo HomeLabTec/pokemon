@@ -166,19 +166,19 @@ final class CardScanViewModel: ObservableObject {
     }
 
     private func loadMatchedImage(for card: CardRow) async {
+        if setForCard(card) == nil {
+            do {
+                let result: [SetRow] = try await client.request("sets")
+                sets = result
+            } catch {
+                // ignore
+            }
+        }
         if let set = setForCard(card) {
             matchedImageURL = URL(string: "https://images.pokemontcg.io/\(set.code)/\(card.number).png")
             return
         }
-        do {
-            let detail: CardDetailResponse = try await client.request("cards/\(card.id)")
-            if let local = detail.images.first(where: { $0.kind == "large" && $0.local_path != nil })?.local_path,
-               let url = URL(string: local) {
-                matchedImageURL = url
-            }
-        } catch {
-            matchedImageURL = nil
-        }
+        matchedImageURL = nil
     }
 
     private func normalizeNumber(_ value: String) -> String {
@@ -197,6 +197,7 @@ struct CardScanView: View {
     @State private var showImagePicker = false
     @State private var pickerSource: UIImagePickerController.SourceType = .photoLibrary
     @State private var showHoldingSheet = false
+    @State private var didAutoOpen = false
     @State private var quantity = 1
     @State private var condition = "NM"
     @State private var isForTrade = false
@@ -217,6 +218,15 @@ struct CardScanView: View {
                                 .frame(maxWidth: 260)
                                 .cornerRadius(16)
                                 .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.15)))
+                        }
+                        if let matchedURL = viewModel.matchedImageURL, viewModel.step == .confirm {
+                            VStack(spacing: 8) {
+                                Text("Matched card")
+                                    .foregroundColor(.white.opacity(0.7))
+                                    .font(.caption)
+                                CachedAsyncImage(url: matchedURL, cornerRadius: 14)
+                                    .frame(width: 200, height: 280)
+                            }
                         }
                         if viewModel.isIdentifying || viewModel.isSearching {
                             ProgressView()
@@ -247,7 +257,13 @@ struct CardScanView: View {
                 }
             }
         }
-        .onAppear { Task { await viewModel.loadSets() } }
+        .onAppear {
+            Task { await viewModel.loadSets() }
+            if !didAutoOpen {
+                didAutoOpen = true
+                openCamera()
+            }
+        }
         .sheet(isPresented: $showImagePicker) {
             ImagePicker(sourceType: pickerSource) { image in
                 viewModel.image = image
@@ -371,8 +387,19 @@ struct CardScanView: View {
                 Text("\(setName(for: selectedCard)) • \(selectedCard.number)")
                     .foregroundColor(.white.opacity(0.6))
                     .font(.footnote)
+                Button {
+                    prepareHoldingDefaults()
+                    showHoldingSheet = true
+                } label: {
+                    Text("Add to holdings")
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(RoundedRectangle(cornerRadius: 16).fill(colorFromHex(accentHex) ?? .orange))
+                        .foregroundColor(.black)
+                }
                 Button("Scan another") {
                     viewModel.reset()
+                    openCamera()
                 }
                 .foregroundColor(.white.opacity(0.8))
             }
