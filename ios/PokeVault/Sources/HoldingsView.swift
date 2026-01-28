@@ -295,23 +295,22 @@ struct HoldingCardView: View {
                 .font(.caption)
                 .foregroundColor(.white.opacity(0.6))
             HStack {
-                Text(priceText)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundColor(colorFromHex(accentHex) ?? .orange)
-                Spacer()
-                Text(item.condition)
-                    .font(.caption2)
-                    .foregroundColor(.white.opacity(0.5))
-            }
-            if let graded {
-                HStack {
-                    Text("\(graded.grader) \(graded.grade)")
-                        .font(.caption)
-                        .foregroundColor(.white.opacity(0.7))
-                    Spacer()
+                if graded != nil {
                     Text(gradedPriceText)
-                        .font(.caption)
-                        .foregroundColor((colorFromHex(accentHex) ?? .orange).opacity(0.8))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(colorFromHex(accentHex) ?? .orange)
+                    Spacer()
+                    Text("\(graded?.grader ?? "") \(graded?.grade ?? "")")
+                        .font(.caption2)
+                        .foregroundColor(.white.opacity(0.6))
+                } else {
+                    Text(priceText)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(colorFromHex(accentHex) ?? .orange)
+                    Spacer()
+                    Text(item.condition)
+                        .font(.caption2)
+                        .foregroundColor(.white.opacity(0.5))
                 }
             }
         }

@@ -630,15 +630,7 @@ const Holdings = () => {
                   <p className="text-xs text-white/50">
                     {item.set.name} • {item.card.rarity ?? "Unknown rarity"}
                   </p>
-                  <div className="mt-2 flex items-center justify-between text-xs">
-                    <span className="text-accent">
-                      {priceMap[item.card.id]?.market
-                        ? `$${priceMap[item.card.id].market?.toFixed(2)}`
-                        : "—"}
-                    </span>
-                    <span className="text-white/40">NM</span>
-                  </div>
-                  {graded && (
+                  {graded ? (
                     <div className="mt-2 flex items-center justify-between text-xs">
                       <span className="text-white/70">
                         {graded.grader} {graded.grade}
@@ -646,6 +638,15 @@ const Holdings = () => {
                       <span className="text-accent">
                         {gradedValue ? `$${gradedValue.toFixed(2)}` : "—"}
                       </span>
+                    </div>
+                  ) : (
+                    <div className="mt-2 flex items-center justify-between text-xs">
+                      <span className="text-accent">
+                        {priceMap[item.card.id]?.market
+                          ? `$${priceMap[item.card.id].market?.toFixed(2)}`
+                          : "—"}
+                      </span>
+                      <span className="text-white/40">NM</span>
                     </div>
                   )}
                   <p className="mt-2 text-xs text-white/60">
