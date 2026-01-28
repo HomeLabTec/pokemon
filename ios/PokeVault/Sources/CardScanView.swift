@@ -424,7 +424,7 @@ struct CardScanView: View {
             }
             Button("Try again") {
                 viewModel.reset()
-                showSourcePicker = true
+                openCamera()
             }
             .foregroundColor(.white.opacity(0.8))
         }
