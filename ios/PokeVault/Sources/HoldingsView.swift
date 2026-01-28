@@ -281,6 +281,7 @@ struct HoldingCardView: View {
     let price: Double?
     let graded: GradedRow?
     let gradedPrice: Double?
+    @AppStorage("accentHex") private var accentHex: String = "#f59e0b"
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
