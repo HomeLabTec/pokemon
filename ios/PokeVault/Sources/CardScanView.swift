@@ -209,6 +209,11 @@ struct CardScanView: View {
                     .padding()
                 }
             }
+            .safeAreaInset(edge: .bottom) {
+                if viewModel.step == .confirm, viewModel.selectedCard != nil {
+                    addHoldingButton
+                }
+            }
             .navigationTitle("Scan Card")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -344,29 +349,36 @@ struct CardScanView: View {
                     .foregroundColor(.white)
                     .font(.headline)
                 CachedAsyncImage(url: imageURL(for: selectedCard), cornerRadius: 14)
-                    .frame(width: 180, height: 250)
+                    .frame(width: 200, height: 280)
                 Text(selectedCard.name)
                     .foregroundColor(.white)
                     .font(.title3.bold())
                 Text("\(setName(for: selectedCard)) • \(selectedCard.number)")
                     .foregroundColor(.white.opacity(0.6))
                     .font(.footnote)
-                Button {
-                    prepareHoldingDefaults()
-                    showHoldingSheet = true
-                } label: {
-                    Text("Add to holdings")
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(RoundedRectangle(cornerRadius: 16).fill(colorFromHex(accentHex) ?? .orange))
-                        .foregroundColor(.black)
-                }
                 Button("Scan another") {
                     viewModel.reset()
                 }
                 .foregroundColor(.white.opacity(0.8))
             }
         }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var addHoldingButton: some View {
+        Button {
+            prepareHoldingDefaults()
+            showHoldingSheet = true
+        } label: {
+            Text("Add to holdings")
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(RoundedRectangle(cornerRadius: 16).fill(colorFromHex(accentHex) ?? .orange))
+                .foregroundColor(.black)
+        }
+        .padding(.horizontal)
+        .padding(.bottom, 12)
+        .background(Color.black.opacity(0.6))
     }
 
     private var notFoundView: some View {

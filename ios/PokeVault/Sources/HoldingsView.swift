@@ -11,6 +11,8 @@ struct HoldingsView: View {
     @State private var activeSheet: HoldingSheet?
     @State private var showDeleteConfirm = false
     @State private var sortBy = "value"
+    @State private var showSearch = false
+    @State private var searchQuery = ""
     @State private var editQuantity = 1
     @State private var editCondition = "NM"
     @State private var editForTrade = false
@@ -139,6 +141,21 @@ struct HoldingsView: View {
                 Text("This will remove \(selectedHolding.card.name) from your holdings.")
             }
         }
+        .sheet(isPresented: $showSearch) {
+            NavigationStack {
+                Form {
+                    Section("Search holdings") {
+                        TextField("Search by card name", text: $searchQuery)
+                    }
+                }
+                .navigationTitle("Search")
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Close") { showSearch = false }
+                    }
+                }
+            }
+        }
     }
 
     private var header: some View {
@@ -151,6 +168,13 @@ struct HoldingsView: View {
                     .font(.footnote)
             }
             Spacer()
+            Button {
+                showSearch = true
+            } label: {
+                Image(systemName: "magnifyingglass")
+                    .font(.title3)
+                    .foregroundColor(colorFromHex(accentHex) ?? .orange)
+            }
         }
         .padding(.horizontal)
         .foregroundColor(.white)
@@ -252,7 +276,12 @@ struct HoldingsView: View {
     }
 
     private var sortedHoldings: [HoldingRow] {
-        viewModel.holdings.sorted { lhs, rhs in
+        let filtered = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            ? viewModel.holdings
+            : viewModel.holdings.filter {
+                $0.card.name.localizedCaseInsensitiveContains(searchQuery)
+            }
+        return filtered.sorted { lhs, rhs in
             switch sortBy {
             case "set":
                 if lhs.set.name == rhs.set.name {

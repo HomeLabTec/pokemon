@@ -2,6 +2,10 @@ import SwiftUI
 
 @main
 struct PokeVaultApp: App {
+    init() {
+        AppConfig.migrateCardIdServerURLIfNeeded()
+    }
+
     var body: some Scene {
         WindowGroup {
             RootView()
