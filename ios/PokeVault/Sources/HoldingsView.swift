@@ -27,7 +27,7 @@ struct HoldingsView: View {
             VStack(spacing: 16) {
                 header
                 if viewModel.isLoading {
-                    ProgressView().tint(Color(hex: accentHex) ?? .orange)
+                    ProgressView().tint(Color.fromHex(accentHex) ?? .orange)
                 }
                 ScrollView {
                     LazyVGrid(columns: columns, spacing: 16) {
@@ -62,7 +62,7 @@ struct HoldingsView: View {
                     }
                 } label: {
                     Label("Sort", systemImage: "arrow.up.arrow.down")
-                        .foregroundColor(Color(hex: accentHex) ?? .orange)
+                        .foregroundColor(Color.fromHex(accentHex) ?? .orange)
                 }
             }
         }
@@ -296,7 +296,7 @@ struct HoldingCardView: View {
             HStack {
                 Text(priceText)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundColor(Color(hex: accentHex) ?? .orange)
+                    .foregroundColor(Color.fromHex(accentHex) ?? .orange)
                 Spacer()
                 Text(item.condition)
                     .font(.caption2)
@@ -310,7 +310,7 @@ struct HoldingCardView: View {
                     Spacer()
                     Text(gradedPriceText)
                         .font(.caption)
-                        .foregroundColor((Color(hex: accentHex) ?? .orange).opacity(0.8))
+                        .foregroundColor((Color.fromHex(accentHex) ?? .orange).opacity(0.8))
                 }
             }
         }
@@ -343,7 +343,7 @@ struct DetailLoadingView: View {
             VStack(spacing: 16) {
                 if isLoading {
                     ProgressView()
-                        .tint(Color(hex: accentHex) ?? .orange)
+                        .tint(Color.fromHex(accentHex) ?? .orange)
                 }
                 Text(isLoading ? "Loading card details..." : "Unable to load card details.")
                     .foregroundColor(.white.opacity(0.7))

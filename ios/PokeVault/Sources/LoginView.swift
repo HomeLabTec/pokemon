@@ -53,7 +53,7 @@ struct LoginView: View {
                     }
                     .frame(maxWidth: 320)
                     .padding(.vertical, 12)
-                    .background(RoundedRectangle(cornerRadius: 18).fill(Color(hex: accentHex) ?? .orange))
+                    .background(RoundedRectangle(cornerRadius: 18).fill(Color.fromHex(accentHex) ?? .orange))
                     .foregroundColor(.black)
                 }
                 .disabled(auth.isLoading)

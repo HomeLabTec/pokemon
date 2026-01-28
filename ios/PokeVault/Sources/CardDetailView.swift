@@ -29,7 +29,7 @@ struct CardDetailView: View {
                         heroImage
                         detailCard
                         PriceHistoryChartView(points: priceHistory, label: priceLabel)
-                        let accent = Color(hex: accentHex) ?? .orange
+                        let accent = Color.fromHex(accentHex) ?? .orange
                         if let primaryActionTitle, let primaryAction {
                             Button(primaryActionTitle) {
                                 primaryAction()
@@ -111,7 +111,7 @@ struct CardDetailView: View {
             HStack {
                 Text(latestPriceText)
                     .font(.title3.bold())
-                    .foregroundColor(Color(hex: accentHex) ?? .orange)
+                    .foregroundColor(Color.fromHex(accentHex) ?? .orange)
                 Spacer()
                 Text(priceLabel)
                     .font(.caption)

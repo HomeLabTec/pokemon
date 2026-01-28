@@ -28,7 +28,7 @@ struct PriceHistoryChartView: View {
                     .overlay(Text("No price history yet").foregroundColor(.white.opacity(0.6)))
                     .frame(height: 190)
             } else {
-                let accent = Color(hex: accentHex) ?? .orange
+                let accent = Color.fromHex(accentHex) ?? .orange
                 Chart(filtered, id: \.date) { point in
                     LineMark(
                         x: .value("Date", point.date),
@@ -153,7 +153,7 @@ struct RangePicker: View {
     @AppStorage("accentHex") private var accentHex: String = "#f59e0b"
 
     var body: some View {
-        let accent = Color(hex: accentHex) ?? .orange
+        let accent = Color.fromHex(accentHex) ?? .orange
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 ForEach(RangeOption.allCases) { option in
