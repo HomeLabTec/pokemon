@@ -1,6 +1,11 @@
 import SwiftUI
 
 extension Color {
+    init?(hex: String) {
+        guard let color = Color.fromHex(hex) else { return nil }
+        self = color
+    }
+
     static func fromHex(_ hex: String) -> Color? {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
         var int: UInt64 = 0
