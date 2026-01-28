@@ -42,7 +42,7 @@ struct DashboardView: View {
                     .foregroundColor(.white.opacity(0.6))
             }
             Spacer()
-            let accent = Color.fromHex(accentHex) ?? .orange
+            let accent = colorFromHex(accentHex) ?? .orange
             Button {
                 Task { await triggerSnapshot() }
             } label: {
@@ -104,7 +104,7 @@ struct DashboardView: View {
                     .overlay(Text("No snapshots yet").foregroundColor(.white.opacity(0.6)))
                     .frame(height: 200)
             } else {
-                let accent = Color.fromHex(accentHex) ?? .orange
+                let accent = colorFromHex(accentHex) ?? .orange
                 Chart(filtered, id: \.date) { point in
                     LineMark(
                         x: .value("Date", point.date),

@@ -17,7 +17,7 @@ struct SettingsView: View {
                 ColorPicker(
                     "Pick a color",
                     selection: Binding(
-                        get: { Color.fromHex(accentHex) ?? .orange },
+                        get: { colorFromHex(accentHex) ?? .orange },
                         set: { accentHex = $0.toHexString() }
                     )
                 )
@@ -33,7 +33,7 @@ struct SettingsView: View {
                 Text("Log out")
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
-                    .background(RoundedRectangle(cornerRadius: 16).stroke(Color.fromHex(accentHex) ?? .orange))
+                    .background(RoundedRectangle(cornerRadius: 16).stroke(colorFromHex(accentHex) ?? .orange))
             }
             Spacer()
         }

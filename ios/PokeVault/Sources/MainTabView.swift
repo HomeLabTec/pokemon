@@ -30,6 +30,6 @@ struct MainTabView: View {
                 Label("Account", systemImage: "person.crop.circle")
             }
         }
-        .tint(Color.fromHex(accentHex) ?? .orange)
+        .tint(colorFromHex(accentHex) ?? .orange)
     }
 }

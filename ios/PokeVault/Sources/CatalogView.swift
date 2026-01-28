@@ -24,7 +24,7 @@ struct CatalogView: View {
                 header
                 filters
                 if viewModel.isLoading {
-                    ProgressView().tint(Color.fromHex(accentHex) ?? .orange)
+                    ProgressView().tint(colorFromHex(accentHex) ?? .orange)
                 }
                 ScrollView {
                     LazyVGrid(columns: columns, spacing: 16) {
@@ -139,7 +139,7 @@ struct CatalogView: View {
             } label: {
                 Image(systemName: "slider.horizontal.3")
                     .font(.title3)
-                    .foregroundColor(Color.fromHex(accentHex) ?? .orange)
+                    .foregroundColor(colorFromHex(accentHex) ?? .orange)
             }
         }
         .padding(.horizontal)
@@ -155,7 +155,7 @@ struct CatalogView: View {
                 }
             }
             .pickerStyle(.menu)
-            .tint(Color.fromHex(accentHex) ?? .orange)
+            .tint(colorFromHex(accentHex) ?? .orange)
             .onChange(of: viewModel.selectedSetId) { _ in
                 Task { await viewModel.loadCards() }
             }
@@ -241,7 +241,7 @@ struct CatalogCardView: View {
             HStack {
                 Text(priceText)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundColor(Color.fromHex(accentHex) ?? .orange)
+                    .foregroundColor(colorFromHex(accentHex) ?? .orange)
                 Spacer()
                 Text("NM")
                     .font(.caption2)
