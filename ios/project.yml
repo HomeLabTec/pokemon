@@ -29,6 +29,3 @@ targets:
         NSPhotoLibraryUsageDescription: Allow photo library access to select Pokémon card images.
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: false
-          NSExceptionDomains:
-            "172.22.22.51":
-              NSExceptionAllowsInsecureHTTPLoads: true

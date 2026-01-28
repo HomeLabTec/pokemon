@@ -31,7 +31,7 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Card ID server")
                     .font(.subheadline.weight(.semibold))
-                TextField("http://172.22.22.51:8099", text: $cardIdServerUrl)
+                TextField("https://pokescan.taconetwork.net", text: $cardIdServerUrl)
                     .textInputAutocapitalization(.never)
                     .keyboardType(.URL)
                     .padding(12)
