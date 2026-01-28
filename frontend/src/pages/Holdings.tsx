@@ -630,28 +630,21 @@ const Holdings = () => {
                   <p className="text-xs text-white/50">
                     {item.set.name} • {item.card.rarity ?? "Unknown rarity"}
                   </p>
-                  {graded ? (
-                    <div className="mt-2 flex items-center justify-between text-xs">
-                      <span className="text-white/70">
-                        {graded.grader} {graded.grade}
-                      </span>
-                      <span className="text-accent">
-                        {gradedValue ? `$${gradedValue.toFixed(2)}` : "—"}
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="mt-2 flex items-center justify-between text-xs">
-                      <span className="text-accent">
-                        {priceMap[item.card.id]?.market
+                  <div className="mt-2 flex items-center justify-between text-xs">
+                    <span className="text-white/70">
+                      {graded ? `${graded.grader} ${graded.grade}` : item.condition}
+                    </span>
+                    <span className="text-accent">
+                      {graded
+                        ? gradedValue
+                          ? `$${gradedValue.toFixed(2)}`
+                          : "—"
+                        : priceMap[item.card.id]?.market
                           ? `$${priceMap[item.card.id].market?.toFixed(2)}`
                           : "—"}
-                      </span>
-                      <span className="text-white/40">NM</span>
-                    </div>
-                  )}
-                  <p className="mt-2 text-xs text-white/60">
-                    {item.condition} • Qty {item.quantity}
-                  </p>
+                    </span>
+                  </div>
+                  <p className="mt-2 text-xs text-white/60">Qty {item.quantity}</p>
                   <div className="mt-3 flex flex-wrap gap-2 text-xs">
                     {item.is_for_trade && (
                       <span className="rounded-full bg-accent/20 px-3 py-1 text-accent">Trade</span>
