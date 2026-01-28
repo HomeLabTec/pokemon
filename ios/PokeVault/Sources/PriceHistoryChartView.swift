@@ -28,7 +28,7 @@ struct PriceHistoryChartView: View {
                     .overlay(Text("No price history yet").foregroundColor(.white.opacity(0.6)))
                     .frame(height: 190)
             } else {
-                let accent = Color(hex: accentHex) ?? .orange
+                let accent = colorFromHex(accentHex) ?? .orange
                 Chart(filtered, id: \.date) { point in
                     LineMark(
                         x: .value("Date", point.date),
@@ -153,7 +153,7 @@ struct RangePicker: View {
     @AppStorage("accentHex") private var accentHex: String = "#f59e0b"
 
     var body: some View {
-        let accent = Color(hex: accentHex) ?? .orange
+        let accent = colorFromHex(accentHex) ?? .orange
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 ForEach(RangeOption.allCases) { option in
@@ -173,4 +173,28 @@ struct RangePicker: View {
             .padding(.horizontal, 6)
         }
     }
+}
+
+private func colorFromHex(_ hex: String) -> Color? {
+    let cleaned = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+    var int: UInt64 = 0
+    guard Scanner(string: cleaned).scanHexInt64(&int) else { return nil }
+    let a, r, g, b: UInt64
+    switch cleaned.count {
+    case 3:
+        (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
+    case 6:
+        (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+    case 8:
+        (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
+    default:
+        return nil
+    }
+    return Color(
+        .sRGB,
+        red: Double(r) / 255,
+        green: Double(g) / 255,
+        blue: Double(b) / 255,
+        opacity: Double(a) / 255
+    )
 }
